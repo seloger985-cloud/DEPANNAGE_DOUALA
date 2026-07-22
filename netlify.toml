@@ -1,0 +1,26 @@
+# netlify.toml — racine du repo
+[build]
+  publish = "public"          # y placer client.html, artisan.html, admin.html
+  functions = "netlify/functions"
+
+[functions."run-dispatch"]
+  schedule = "* * * * *"      # dispatch + housekeeping chaque minute
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+# Pages propres
+[[redirects]]
+  from = "/artisan"
+  to = "/artisan.html"
+  status = 200
+[[redirects]]
+  from = "/admin"
+  to = "/admin.html"
+  status = 200
+[[redirects]]
+  from = "/"
+  to = "/client.html"
+  status = 200

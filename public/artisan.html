@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#141B23">
+<title>Espace Artisan</title>
+<!-- TODO PWA : manifest.json + service worker (installation écran d'accueil + push). -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F6F4EF; --card:#FFFFFF; --ink:#141B23; --steel:#5A6472;
+    --gilet:#FFB100; --gilet-ink:#3A2C00; --ok:#1F9D55; --danger:#D64545;
+    --line:#E4E0D6; --r:14px;
+  }
+  *{box-sizing:border-box; margin:0; -webkit-tap-highlight-color:transparent}
+  html{font-size:16px}
+  body{
+    font-family:'Archivo',system-ui,sans-serif; background:var(--paper); color:var(--ink);
+    min-height:100dvh; padding-bottom:76px;
+  }
+  h1,h2,h3{font-weight:900; letter-spacing:-.01em}
+  button{font-family:inherit; border:0; cursor:pointer}
+
+  /* ---------- Header ---------- */
+  header{
+    position:sticky; top:0; z-index:20; background:var(--ink); color:#fff;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 16px; padding-top:calc(14px + env(safe-area-inset-top));
+  }
+  header .brand{font-weight:900; font-size:1.05rem; text-transform:uppercase; letter-spacing:.06em}
+  header .brand small{display:block; font-weight:400; font-size:.68rem; letter-spacing:.12em; color:#B9C0C9}
+  .dispo{display:flex; align-items:center; gap:8px; font-size:.8rem; font-weight:600}
+  .switch{position:relative; width:52px; height:30px; background:#39424E; border-radius:99px; transition:background .2s}
+  .switch::after{content:''; position:absolute; top:3px; left:3px; width:24px; height:24px; border-radius:50%; background:#fff; transition:transform .2s}
+  .switch.on{background:var(--ok)}
+  .switch.on::after{transform:translateX(22px)}
+
+  main{padding:16px; max-width:560px; margin:0 auto}
+
+  /* ---------- Cartes ---------- */
+  .card{background:var(--card); border:1px solid var(--line); border-radius:var(--r); padding:16px; margin-bottom:14px}
+  .card .meta{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px}
+  .tag{font-size:.72rem; font-weight:800; text-transform:uppercase; letter-spacing:.05em;
+       padding:4px 10px; border-radius:99px; background:var(--paper); color:var(--steel)}
+  .tag.trade{background:var(--ink); color:var(--gilet)}
+  .tag.urgent{background:var(--danger); color:#fff}
+  .card p.desc{font-size:.95rem; line-height:1.45; margin:8px 0 12px}
+  .repere{background:var(--paper); border-radius:10px; padding:10px 12px; font-size:.9rem; margin-bottom:12px}
+  .repere b{display:block; font-size:.7rem; text-transform:uppercase; letter-spacing:.08em; color:var(--steel); margin-bottom:2px}
+
+  /* ---------- Signature : jauge hachurée "chantier" ---------- */
+  .window{margin:12px 0}
+  .window .label{display:flex; justify-content:space-between; font-size:.75rem; font-weight:600; color:var(--steel); margin-bottom:6px}
+  .window .label .left{color:var(--gilet-ink); font-weight:800}
+  .gauge{height:14px; border-radius:99px; background:var(--paper); border:1px solid var(--line); overflow:hidden}
+  .gauge .fill{
+    height:100%; border-radius:99px; transition:width 1s linear;
+    background:repeating-linear-gradient(45deg, var(--gilet) 0 10px, var(--ink) 10px 20px);
+  }
+  .gauge .fill.low{background:repeating-linear-gradient(45deg, var(--danger) 0 10px, var(--ink) 10px 20px)}
+
+  /* ---------- Boutons ---------- */
+  .row{display:flex; gap:10px}
+  .btn{
+    flex:1; min-height:52px; border-radius:12px; font-size:1rem; font-weight:800;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .btn:active{transform:scale(.98)}
+  .btn.accept{background:var(--gilet); color:var(--gilet-ink)}
+  .btn.ghost{background:var(--paper); color:var(--steel); border:1px solid var(--line)}
+  .btn.dark{background:var(--ink); color:#fff}
+  .btn.ok{background:var(--ok); color:#fff}
+  .btn.danger-line{background:none; color:var(--danger); border:1px solid var(--danger)}
+  .btn[disabled]{opacity:.5; pointer-events:none}
+  .btn.small{min-height:44px; font-size:.9rem; flex:none; padding:0 16px}
+
+  /* ---------- Statut mission en cours ---------- */
+  .status-line{display:flex; align-items:center; gap:8px; font-weight:800; font-size:.85rem;
+    text-transform:uppercase; letter-spacing:.05em; margin-bottom:10px}
+  .dot{width:10px; height:10px; border-radius:50%; background:var(--gilet)}
+
+  /* ---------- Formulaires ---------- */
+  label.f{display:block; font-size:.78rem; font-weight:800; text-transform:uppercase;
+    letter-spacing:.06em; color:var(--steel); margin:14px 0 6px}
+  input[type=text],input[type=tel],input[type=number],textarea,select{
+    width:100%; padding:14px; border:1px solid var(--line); border-radius:12px;
+    font-family:inherit; font-size:1rem; background:#fff; color:var(--ink);
+  }
+  textarea{min-height:90px; resize:vertical}
+  input:focus,textarea:focus{outline:3px solid var(--gilet); border-color:var(--gilet)}
+  .chips{display:flex; flex-wrap:wrap; gap:8px}
+  .chip{padding:10px 14px; border-radius:99px; border:1px solid var(--line); background:#fff;
+    font-size:.9rem; font-weight:600; color:var(--steel)}
+  .chip.sel{background:var(--ink); color:var(--gilet); border-color:var(--ink)}
+
+  /* ---------- Tabs ---------- */
+  nav.tabs{
+    position:fixed; bottom:0; left:0; right:0; z-index:20;
+    display:flex; background:var(--ink); padding-bottom:env(safe-area-inset-bottom);
+  }
+  nav.tabs button{
+    flex:1; background:none; color:#8E97A3; font-size:.72rem; font-weight:600;
+    padding:10px 0 12px; display:flex; flex-direction:column; align-items:center; gap:3px;
+  }
+  nav.tabs button .ico{font-size:1.25rem; line-height:1}
+  nav.tabs button.active{color:var(--gilet)}
+  nav.tabs button .badge{position:absolute; transform:translate(14px,-4px); background:var(--danger);
+    color:#fff; font-size:.62rem; font-weight:800; border-radius:99px; padding:1px 6px}
+
+  /* ---------- Divers ---------- */
+  .empty{text-align:center; color:var(--steel); padding:48px 24px; font-size:.95rem; line-height:1.5}
+  .empty b{display:block; font-size:1.05rem; color:var(--ink); margin-bottom:6px}
+  .toast{
+    position:fixed; left:16px; right:16px; bottom:88px; z-index:50;
+    background:var(--ink); color:#fff; padding:14px 16px; border-radius:12px;
+    font-size:.9rem; font-weight:600; opacity:0; transform:translateY(8px); transition:.25s;
+    pointer-events:none;
+  }
+  .toast.show{opacity:1; transform:none}
+  .photos{display:flex; gap:8px; overflow-x:auto; margin-bottom:10px}
+  .photos img{height:84px; border-radius:10px; border:1px solid var(--line)}
+  .screen{display:none}
+  .screen.on{display:block}
+  .kyc-note{background:var(--gilet); color:var(--gilet-ink); border-radius:var(--r);
+    padding:14px 16px; font-size:.9rem; font-weight:600; line-height:1.4; margin-bottom:14px}
+  .money{font-weight:900; font-size:1.3rem}
+  .money small{font-weight:600; font-size:.8rem; color:var(--steel)}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">Espace artisan<small>Dépannage Douala</small></div>
+  <div class="dispo" id="dispoWrap" hidden>
+    <span id="dispoLabel">Disponible</span>
+    <div class="switch on" id="dispoSwitch" role="switch" aria-checked="true" tabindex="0"></div>
+  </div>
+</header>
+
+<main>
+  <!-- ========== AUTH ========== -->
+  <section class="screen on" id="scr-auth">
+    <div class="card">
+      <h2 style="margin-bottom:6px">Connexion</h2>
+      <p style="color:var(--steel); font-size:.9rem">Ton numéro reçoit un code par SMS. Rien d’autre à retenir.</p>
+      <label class="f" for="phone">Numéro de téléphone</label>
+      <input type="tel" id="phone" placeholder="6 XX XX XX XX" inputmode="numeric" autocomplete="tel">
+      <div id="otpZone" hidden>
+        <label class="f" for="otp">Code reçu par SMS</label>
+        <input type="text" id="otp" placeholder="123456" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
+      </div>
+      <div class="row" style="margin-top:16px">
+        <button class="btn accept" id="btnAuth">Recevoir mon code</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== ONBOARDING ========== -->
+  <section class="screen" id="scr-onboard">
+    <div class="card">
+      <h2 style="margin-bottom:6px">Ton dossier artisan</h2>
+      <p style="color:var(--steel); font-size:.9rem">5 minutes. Le badge « Professionnel vérifié » se gagne ici.</p>
+
+      <label class="f" for="obName">Nom complet</label>
+      <input type="text" id="obName" autocomplete="name">
+
+      <label class="f">Tes métiers (3 maximum)</label>
+      <div class="chips" id="obTrades"></div>
+
+      <label class="f">Tes quartiers d’intervention</label>
+      <div class="chips" id="obZones"></div>
+
+      <label class="f" for="obMomo">Numéro Mobile Money (reversements)</label>
+      <input type="tel" id="obMomo" placeholder="6 XX XX XX XX" inputmode="numeric">
+
+      <label class="f" for="obCniR">CNI — recto (photo)</label>
+      <input type="file" id="obCniR" accept="image/*" capture="environment">
+      <label class="f" for="obCniV">CNI — verso (photo)</label>
+      <input type="file" id="obCniV" accept="image/*" capture="environment">
+
+      <div class="row" style="margin-top:18px">
+        <button class="btn accept" id="btnOnboard">Envoyer mon dossier</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== ATTENTE KYC ========== -->
+  <section class="screen" id="scr-pending">
+    <div class="kyc-note">🕗 Dossier reçu. La vérification prend en général moins de 24 h — tu recevras un SMS dès l’activation.</div>
+    <div class="card">
+      <p style="font-size:.9rem; color:var(--steel); line-height:1.5">Pendant ce temps, prépare : photos de tes réalisations, plages de disponibilité, et vérifie que ton numéro Mobile Money est bien à ton nom.</p>
+    </div>
+  </section>
+
+  <!-- ========== DISPATCH ========== -->
+  <section class="screen" id="scr-dispatch">
+    <h2 style="margin:4px 0 14px">Missions proposées</h2>
+    <div id="dispatchList"></div>
+  </section>
+
+  <!-- ========== EN COURS ========== -->
+  <section class="screen" id="scr-active">
+    <h2 style="margin:4px 0 14px">Mes missions</h2>
+    <div id="activeList"></div>
+  </section>
+
+  <!-- ========== PROFIL ========== -->
+  <section class="screen" id="scr-profile">
+    <h2 style="margin:4px 0 14px">Mon profil</h2>
+    <div class="card" id="profileCard"></div>
+    <div class="card">
+      <h3 style="font-size:.95rem; margin-bottom:10px">Mes reversements</h3>
+      <div id="payoutList" style="font-size:.9rem"></div>
+    </div>
+    <button class="btn danger-line" id="btnLogout" style="width:100%">Se déconnecter</button>
+  </section>
+</main>
+
+<nav class="tabs" id="tabs" hidden>
+  <button data-tab="dispatch" class="active"><span class="ico">📢</span>Proposées<span class="badge" id="badgeDispatch" hidden></span></button>
+  <button data-tab="active"><span class="ico">🔧</span>En cours</button>
+  <button data-tab="profile"><span class="ico">👤</span>Profil</button>
+</nav>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ================= CONFIG ================= */
+const SUPABASE_URL = 'https://krqzvlcqorqiqwxkkvqw.supabase.co';   // ← à remplir
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtycXp2bGNxb3JxaXF3eGtrdnF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ2NzAyMDQsImV4cCI6MjEwMDI0NjIwNH0.-89kluSbySWqZggmr_dXpHeP70lyrFxof40P-6Kfgrs';                // ← à remplir
+const FN = '/.netlify/functions';
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* ================= ÉTAT ================= */
+const S = {
+  user: null, profile: null, details: null,
+  trades: [], zones: [], dispatches: [], missions: [],
+  timer: null, channel: null,
+};
+const $ = (id) => document.getElementById(id);
+const fcfa = (n) => (n ?? 0).toLocaleString('fr-FR') + ' FCFA';
+
+function toast(msg) {
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 3200);
+}
+function show(id) {
+  document.querySelectorAll('.screen').forEach((s) => s.classList.remove('on'));
+  $(id).classList.add('on');
+}
+function normPhone(raw) {
+  const d = String(raw).replace(/\D/g, '');
+  if (/^237\d{9}$/.test(d)) return '+' + d;
+  if (/^6\d{8}$/.test(d)) return '+237' + d;
+  return null;
+}
+
+/* ================= AUTH ================= */
+let otpPhone = null;
+$('btnAuth').addEventListener('click', async () => {
+  const btn = $('btnAuth');
+  if (!otpPhone) {
+    const p = normPhone($('phone').value);
+    if (!p) return toast('Numéro invalide — format 6 XX XX XX XX');
+    btn.disabled = true;
+    const { error } = await sb.auth.signInWithOtp({ phone: p });
+    btn.disabled = false;
+    if (error) return toast('Envoi du code impossible. Réessaie.');
+    otpPhone = p; $('otpZone').hidden = false; $('otp').focus();
+    btn.textContent = 'Valider le code';
+  } else {
+    const token = $('otp').value.trim();
+    if (token.length < 4) return toast('Saisis le code reçu par SMS');
+    btn.disabled = true;
+    const { error } = await sb.auth.verifyOtp({ phone: otpPhone, token, type: 'sms' });
+    btn.disabled = false;
+    if (error) return toast('Code incorrect ou expiré');
+    boot();
+  }
+});
+
+$('btnLogout').addEventListener('click', async () => { await sb.auth.signOut(); location.reload(); });
+
+/* ================= BOOT ================= */
+async function boot() {
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) return show('scr-auth');
+  S.user = user;
+
+  const [{ data: trades }, { data: zones }] = await Promise.all([
+    sb.from('trades').select('*').eq('is_active', true),
+    sb.from('zones').select('*').eq('is_active', true),
+  ]);
+  S.trades = trades || []; S.zones = zones || [];
+
+  const { data: profile } = await sb.from('profiles').select('*').eq('id', user.id).maybeSingle();
+  S.profile = profile;
+  if (!profile) return renderOnboarding();
+
+  const { data: details } = await sb.from('artisan_details').select('*').eq('profile_id', user.id).maybeSingle();
+  S.details = details;
+  if (!details) return renderOnboarding();
+  if (details.kyc_status !== 'approved') return show('scr-pending');
+
+  // Artisan validé → app complète
+  $('tabs').hidden = false; $('dispoWrap').hidden = false;
+  setDispoUI(details.is_available);
+  await Promise.all([loadDispatches(), loadMissions(), loadProfileTab()]);
+  subscribeRealtime();
+  startCountdown();
+  show('scr-dispatch');
+}
+
+/* ================= ONBOARDING ================= */
+const obSel = { trades: new Set(), zones: new Set() };
+function chip(list, set, max) {
+  return list.map((x) =>
+    `<button type="button" class="chip" data-id="${x.id}">${x.label_fr || x.label}</button>`).join('');
+}
+function renderOnboarding() {
+  $('obTrades').innerHTML = chip(S.trades);
+  $('obZones').innerHTML = chip(S.zones);
+  $('obTrades').onclick = (e) => pick(e, obSel.trades, 3);
+  $('obZones').onclick = (e) => pick(e, obSel.zones, 99);
+  show('scr-onboard');
+}
+function pick(e, set, max) {
+  const b = e.target.closest('.chip'); if (!b) return;
+  const id = b.dataset.id;
+  if (set.has(id)) { set.delete(id); b.classList.remove('sel'); }
+  else if (set.size < max) { set.add(id); b.classList.add('sel'); }
+  else toast(`Maximum ${max} choix`);
+}
+$('btnOnboard').addEventListener('click', async () => {
+  const name = $('obName').value.trim();
+  const momo = normPhone($('obMomo').value);
+  const recto = $('obCniR').files[0], verso = $('obCniV').files[0];
+  if (name.length < 3) return toast('Ton nom complet est requis');
+  if (!obSel.trades.size) return toast('Choisis au moins un métier');
+  if (!obSel.zones.size) return toast('Choisis au moins un quartier');
+  if (!momo) return toast('Numéro Mobile Money invalide');
+  if (!recto || !verso) return toast('Les deux photos de CNI sont requises');
+
+  const btn = $('btnOnboard'); btn.disabled = true; btn.textContent = 'Envoi en cours…';
+  try {
+    const up = async (file, side) => {
+      const path = `${S.user.id}/${side}.jpg`;
+      const { error } = await sb.storage.from('kyc').upload(path, file, { upsert: true });
+      if (error) throw error; return path;
+    };
+    const [rPath, vPath] = [await up(recto, 'recto'), await up(verso, 'verso')];
+
+    let { error: e1 } = await sb.from('profiles').upsert({
+      id: S.user.id, role: 'artisan', full_name: name, phone: S.user.phone,
+    });
+    if (e1) throw e1;
+    const { error: e2 } = await sb.from('artisan_details').upsert({
+      profile_id: S.user.id, cni_recto_path: rPath, cni_verso_path: vPath,
+      momo_number: momo.replace('+', ''),
+    });
+    if (e2) throw e2;
+    for (const t of obSel.trades) await sb.from('artisan_trades').insert({ profile_id: S.user.id, trade_id: t });
+    for (const z of obSel.zones) await sb.from('artisan_zones').insert({ profile_id: S.user.id, zone_id: z });
+    show('scr-pending');
+  } catch (err) {
+    console.error(err); toast('Envoi impossible. Vérifie ta connexion et réessaie.');
+  } finally { btn.disabled = false; btn.textContent = 'Envoyer mon dossier'; }
+});
+
+/* ================= DISPO ================= */
+function setDispoUI(on) {
+  $('dispoSwitch').classList.toggle('on', on);
+  $('dispoSwitch').setAttribute('aria-checked', on);
+  $('dispoLabel').textContent = on ? 'Disponible' : 'Indisponible';
+}
+async function toggleDispo() {
+  const next = !S.details.is_available;
+  setDispoUI(next);
+  const { error } = await sb.from('artisan_details')
+    .update({ is_available: next }).eq('profile_id', S.user.id);
+  if (error) { setDispoUI(!next); return toast('Changement impossible — réessaie'); }
+  S.details.is_available = next;
+  toast(next ? 'Tu reçois de nouveau les missions' : 'Missions en pause');
+}
+$('dispoSwitch').addEventListener('click', toggleDispo);
+$('dispoSwitch').addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') toggleDispo(); });
+
+/* ================= DISPATCHES ================= */
+async function loadDispatches() {
+  const { data } = await sb.from('dispatch_missions')
+    .select('*').eq('response', 'pending').order('expires_at');
+  S.dispatches = (data || []).filter((d) => new Date(d.expires_at) > new Date());
+  renderDispatches();
+}
+const TRADE_LABEL = (id) => (S.trades.find((t) => t.id === id)?.label_fr) || id;
+
+async function signedPhotos(paths) {
+  const out = [];
+  for (const p of (paths || []).slice(0, 4)) {
+    const { data } = await sb.storage.from('mission-photos').createSignedUrl(p, 3600);
+    if (data?.signedUrl) out.push(data.signedUrl);
+  }
+  return out;
+}
+
+async function renderDispatches() {
+  const wrap = $('dispatchList');
+  $('badgeDispatch').hidden = !S.dispatches.length;
+  $('badgeDispatch').textContent = S.dispatches.length;
+  if (!S.dispatches.length) {
+    wrap.innerHTML = `<div class="empty"><b>Aucune mission proposée</b>Reste disponible — la prochaine demande de ton secteur arrive ici avec une fenêtre de 10 minutes.</div>`;
+    return;
+  }
+  wrap.innerHTML = '';
+  for (const d of S.dispatches) {
+    const card = document.createElement('div');
+    card.className = 'card'; card.dataset.dispatch = d.dispatch_id;
+    card.innerHTML = `
+      <div class="meta">
+        <span class="tag trade">${TRADE_LABEL(d.trade_id)}</span>
+        <span class="tag">${d.zone_label}</span>
+        ${d.urgency ? '<span class="tag urgent">Urgent</span>' : ''}
+      </div>
+      <div class="photos" data-photos hidden></div>
+      <p class="desc">${escapeHtml(d.description)}</p>
+      <p style="font-size:.85rem;color:var(--steel)">Créneau souhaité : <b>${escapeHtml(d.preferred_slot || 'Dès que possible')}</b> · Forfait déplacement : <b>${fcfa(d.diagnostic_fee_fcfa)}</b></p>
+      <div class="window">
+        <div class="label"><span class="left">Fenêtre de réponse</span><span class="countdown" data-expires="${d.expires_at}">—</span></div>
+        <div class="gauge"><div class="fill" data-expires="${d.expires_at}" style="width:100%"></div></div>
+      </div>
+      <div class="row">
+        <button class="btn ghost" data-decline>Passer</button>
+        <button class="btn accept" data-accept>Accepter la mission</button>
+      </div>`;
+    card.querySelector('[data-accept]').onclick = () => respond(d, 'accepted', card);
+    card.querySelector('[data-decline]').onclick = () => respond(d, 'declined', card);
+    wrap.appendChild(card);
+    signedPhotos(d.photos).then((urls) => {
+      if (!urls.length) return;
+      const ph = card.querySelector('[data-photos]');
+      ph.hidden = false;
+      ph.innerHTML = urls.map((u) => `<img src="${u}" alt="Photo du problème">`).join('');
+    });
+  }
+}
+
+async function respond(d, response, card) {
+  card.querySelectorAll('.btn').forEach((b) => (b.disabled = true));
+  const { error } = await sb.from('mission_dispatches')
+    .update({ response }).eq('id', d.dispatch_id);
+  if (error) {
+    card.querySelectorAll('.btn').forEach((b) => (b.disabled = false));
+    return toast('Réponse non envoyée — vérifie ta connexion');
+  }
+  // Le trigger a peut-être requalifié en 'expired' (mission déjà prise) : on relit.
+  const { data: fresh } = await sb.from('mission_dispatches')
+    .select('response').eq('id', d.dispatch_id).single();
+  S.dispatches = S.dispatches.filter((x) => x.dispatch_id !== d.dispatch_id);
+  renderDispatches();
+  if (response === 'declined') return;
+  if (fresh?.response === 'accepted') {
+    toast('🏆 Mission à toi ! Détails dans « En cours ».');
+    await loadMissions(); switchTab('active');
+  } else {
+    toast('Mission déjà attribuée à un autre artisan.');
+  }
+}
+
+/* ================= MISSIONS EN COURS ================= */
+const ACTIVE_STATUSES = ['assigned','en_route','arrived','quote_pending','in_progress','done_artisan','confirmed'];
+const STATUS_FR = {
+  assigned:'Attribuée — préviens ton départ', en_route:'En route', arrived:'Sur place',
+  quote_pending:'Devis envoyé — attente du client', in_progress:'Travaux en cours',
+  done_artisan:'Terminé — attente confirmation client', confirmed:'Confirmée — attente paiement',
+};
+
+async function loadMissions() {
+  const { data } = await sb.from('missions').select('*')
+    .eq('assigned_artisan', S.user.id).in('status', ACTIVE_STATUSES)
+    .order('assigned_at', { ascending: false });
+  S.missions = data || [];
+  renderMissions();
+}
+
+async function renderMissions() {
+  const wrap = $('activeList');
+  if (!S.missions.length) {
+    wrap.innerHTML = `<div class="empty"><b>Aucune mission en cours</b>Les missions acceptées s’affichent ici, avec l’adresse exacte et le contact du client.</div>`;
+    return;
+  }
+  wrap.innerHTML = '';
+  for (const m of S.missions) {
+    const card = document.createElement('div');
+    card.className = 'card';
+    const client = await getCounterparty(m.client_id);
+    card.innerHTML = `
+      <div class="status-line"><span class="dot"></span>${STATUS_FR[m.status] || m.status}</div>
+      <div class="meta">
+        <span class="tag trade">${TRADE_LABEL(m.trade_id)}</span>
+        <span class="tag">${zoneLabel(m.zone_id)}</span>
+      </div>
+      <p class="desc">${escapeHtml(m.description)}</p>
+      <div class="repere"><b>Point de repère</b>${escapeHtml(m.repere)}</div>
+      ${client ? `<div class="repere"><b>Client</b>${escapeHtml(client.full_name)} · <a href="tel:${client.phone}" style="color:var(--ink);font-weight:800">${client.phone}</a></div>` : ''}
+      <div data-actions></div>`;
+    wrap.appendChild(card);
+    renderActions(card.querySelector('[data-actions]'), m);
+  }
+}
+
+function renderActions(zone, m) {
+  const act = (action, extra) => doAction(m.id, action, extra);
+  if (m.status === 'assigned')
+    zone.innerHTML = `<div class="row"><button class="btn dark">🚗 Je pars maintenant</button></div>`,
+    zone.querySelector('.btn').onclick = () => act('en_route');
+  else if (m.status === 'en_route')
+    zone.innerHTML = `<div class="row"><button class="btn dark">📍 Je suis arrivé</button></div>`,
+    zone.querySelector('.btn').onclick = () => act('arrived');
+  else if (m.status === 'arrived' || m.status === 'quote_pending') {
+    zone.innerHTML = `
+      <label class="f">Montant du devis (FCFA, main-d’œuvre)</label>
+      <input type="number" data-q-amount inputmode="numeric" min="500" step="500" placeholder="ex : 12000">
+      <label class="f">Détail des travaux</label>
+      <textarea data-q-details placeholder="ex : Remplacement flexible + joint, reprise fixation colonne"></textarea>
+      <div class="row" style="margin-top:12px">
+        <button class="btn accept">${m.status === 'arrived' ? 'Envoyer le devis' : 'Envoyer un nouveau devis'}</button>
+      </div>
+      ${m.status === 'quote_pending' ? '<p style="font-size:.82rem;color:var(--steel);margin-top:8px">Le client a reçu ton devis. Aucuns travaux avant son accord.</p>' : ''}`;
+    zone.querySelector('.btn').onclick = () => {
+      const amount = parseInt(zone.querySelector('[data-q-amount]').value, 10);
+      const details = zone.querySelector('[data-q-details]').value.trim();
+      if (!amount || amount < 500) return toast('Montant de devis invalide');
+      if (details.length < 10) return toast('Décris les travaux (10 caractères min.)');
+      act('propose_quote', { amount_fcfa: amount, details });
+    };
+  }
+  else if (m.status === 'in_progress')
+    zone.innerHTML = `<p class="money" style="margin-bottom:10px">${fcfa(m.final_amount_fcfa)} <small>· ta part : ${fcfa(m.final_amount_fcfa - m.commission_fcfa)}</small></p>
+      <div class="row"><button class="btn ok">✅ Travaux terminés</button></div>`,
+    zone.querySelector('.btn').onclick = () => act('done');
+  else
+    zone.innerHTML = `<p style="font-size:.85rem;color:var(--steel)">Rien à faire de ton côté pour le moment.</p>`;
+}
+
+async function doAction(mission_id, action, extra = {}) {
+  const { data: { session } } = await sb.auth.getSession();
+  const res = await fetch(`${FN}/mission-action`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+    body: JSON.stringify({ mission_id, action, ...extra }),
+  });
+  const out = await res.json().catch(() => ({}));
+  if (!res.ok) return toast(out.error || 'Action impossible');
+  await loadMissions();
+  const msg = { en_route:'Bonne route 🚗', arrived:'Arrivée enregistrée', propose_quote:'Devis envoyé au client',
+    done:'Fin de travaux déclarée — le client confirme' }[action];
+  if (msg) toast(msg);
+}
+
+/* Contact client (policy profiles_mission_counterparty requise — patch 02) */
+const counterCache = {};
+async function getCounterparty(id) {
+  if (counterCache[id] !== undefined) return counterCache[id];
+  const { data } = await sb.from('profiles').select('full_name, phone').eq('id', id).maybeSingle();
+  counterCache[id] = data || null; return counterCache[id];
+}
+const zoneLabel = (id) => (S.zones.find((z) => z.id === id)?.label) || id;
+
+/* ================= PROFIL ================= */
+async function loadProfileTab() {
+  const d = S.details, p = S.profile;
+  const myTrades = await sb.from('artisan_trades').select('trade_id').eq('profile_id', S.user.id);
+  const myZones = await sb.from('artisan_zones').select('zone_id').eq('profile_id', S.user.id);
+  $('profileCard').innerHTML = `
+    <h3 style="font-size:1.05rem">${escapeHtml(p.full_name)} ${d.verified_badge ? '· ✔ Vérifié' : ''}</h3>
+    <p style="font-size:.85rem;color:var(--steel);margin:6px 0 10px">${p.phone} · MoMo ${d.momo_number || '—'} ${d.momo_verified ? '✔' : '(à vérifier)'}</p>
+    <div class="chips">
+      ${(myTrades.data || []).map((t) => `<span class="chip sel">${TRADE_LABEL(t.trade_id)}</span>`).join('')}
+      ${(myZones.data || []).map((z) => `<span class="chip">${zoneLabel(z.zone_id)}</span>`).join('')}
+    </div>`;
+  const { data: payouts } = await sb.from('payouts').select('*')
+    .eq('artisan_id', S.user.id).order('created_at', { ascending: false }).limit(20);
+  const total = (payouts || []).filter((x) => x.status === 'sent')
+    .reduce((s, x) => s + x.amount_fcfa, 0);
+  $('payoutList').innerHTML = `
+    <p class="money" style="margin-bottom:10px">${fcfa(total)} <small>reversés au total</small></p>
+    ${(payouts || []).map((x) => `
+      <p style="display:flex;justify-content:space-between;padding:8px 0;border-top:1px solid var(--line)">
+        <span>${new Date(x.created_at).toLocaleDateString('fr-FR')}</span>
+        <b>${fcfa(x.amount_fcfa)}</b>
+        <span style="color:${x.status === 'sent' ? 'var(--ok)' : 'var(--steel)'}">${{ pending:'En attente', sent:'Envoyé', failed:'Échec' }[x.status]}</span>
+      </p>`).join('') || '<p style="color:var(--steel)">Ton premier reversement apparaîtra ici.</p>'}`;
+}
+
+/* ================= REALTIME ================= */
+function subscribeRealtime() {
+  if (S.channel) sb.removeChannel(S.channel);
+  S.channel = sb.channel('artisan-live')
+    .on('postgres_changes',
+      { event: '*', schema: 'public', table: 'mission_dispatches', filter: `artisan_id=eq.${S.user.id}` },
+      async (payload) => {
+        await loadDispatches();
+        if (payload.eventType === 'INSERT') {
+          toast('📢 Nouvelle mission proposée !');
+          if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+        }
+      })
+    .on('postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'missions', filter: `assigned_artisan=eq.${S.user.id}` },
+      () => loadMissions())
+    .subscribe();
+}
+
+/* ================= COMPTE À REBOURS ================= */
+const WINDOW_S = 600;
+function startCountdown() {
+  clearInterval(S.timer);
+  S.timer = setInterval(() => {
+    let expired = false;
+    document.querySelectorAll('[data-expires]').forEach((el) => {
+      const left = Math.max(0, (new Date(el.dataset.expires) - Date.now()) / 1000);
+      if (el.classList.contains('fill')) {
+        el.style.width = (left / WINDOW_S) * 100 + '%';
+        el.classList.toggle('low', left < 120);
+      } else {
+        el.textContent = `${Math.floor(left / 60)}:${String(Math.floor(left % 60)).padStart(2, '0')}`;
+      }
+      if (left <= 0) expired = true;
+    });
+    if (expired) loadDispatches();
+  }, 1000);
+}
+
+/* ================= TABS ================= */
+function switchTab(tab) {
+  document.querySelectorAll('nav.tabs button').forEach((b) =>
+    b.classList.toggle('active', b.dataset.tab === tab));
+  show('scr-' + tab);
+  if (tab === 'profile') loadProfileTab();
+}
+$('tabs').addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (b) switchTab(b.dataset.tab);
+});
+
+/* ================= UTIL ================= */
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, (c) =>
+    ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
+boot();
+</script>
+</body>
+</html>

@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Admin — Dépannage</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{--paper:#F6F4EF;--card:#fff;--ink:#141B23;--steel:#5A6472;--gilet:#FFB100;
+    --gilet-ink:#3A2C00;--ok:#1F9D55;--danger:#D64545;--line:#E4E0D6;--r:12px}
+  *{box-sizing:border-box;margin:0}
+  body{font-family:'Archivo',system-ui,sans-serif;background:var(--paper);color:var(--ink);min-height:100vh}
+  button{font-family:inherit;border:0;cursor:pointer}
+  header{background:var(--ink);color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:center}
+  header b{color:var(--gilet);text-transform:uppercase;letter-spacing:.06em}
+  nav{display:flex;gap:6px;padding:12px 20px;flex-wrap:wrap}
+  nav button{padding:9px 16px;border-radius:99px;background:#fff;border:1px solid var(--line);
+    font-weight:600;font-size:.85rem;color:var(--steel)}
+  nav button.on{background:var(--ink);color:var(--gilet);border-color:var(--ink)}
+  nav button .n{background:var(--danger);color:#fff;border-radius:99px;padding:0 7px;font-size:.7rem;margin-left:4px}
+  main{padding:8px 20px 40px;max-width:920px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:12px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .grow{flex:1;min-width:200px}
+  .tag{font-size:.68rem;font-weight:800;text-transform:uppercase;padding:3px 9px;border-radius:99px;background:var(--paper);color:var(--steel)}
+  .tag.warn{background:var(--gilet);color:var(--gilet-ink)}
+  .tag.ok{background:var(--ok);color:#fff}
+  .tag.bad{background:var(--danger);color:#fff}
+  .btn{padding:10px 16px;border-radius:10px;font-weight:800;font-size:.85rem}
+  .btn.ok{background:var(--ok);color:#fff}
+  .btn.accent{background:var(--gilet);color:var(--gilet-ink)}
+  .btn.bad{background:none;color:var(--danger);border:1px solid var(--danger)}
+  .btn.ghost{background:var(--paper);color:var(--steel);border:1px solid var(--line)}
+  .btn[disabled]{opacity:.5;pointer-events:none}
+  .sub{font-size:.8rem;color:var(--steel)}
+  .kyc-imgs{display:flex;gap:10px;margin:10px 0}
+  .kyc-imgs img{width:220px;border-radius:8px;border:1px solid var(--line)}
+  .empty{color:var(--steel);padding:30px;text-align:center}
+  .toast{position:fixed;left:20px;bottom:20px;background:var(--ink);color:#fff;padding:12px 16px;
+    border-radius:10px;font-size:.85rem;font-weight:600;opacity:0;transition:.25s;pointer-events:none;z-index:50}
+  .toast.show{opacity:1}
+  .login{max-width:380px;margin:60px auto}
+  input{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;font-family:inherit;font-size:1rem;margin-bottom:10px}
+  table{width:100%;border-collapse:collapse;font-size:.82rem}
+  td,th{padding:8px 6px;border-top:1px solid var(--line);text-align:left}
+  th{color:var(--steel);font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;border:0}
+</style>
+</head>
+<body>
+<header><b>Admin · Dépannage Douala</b><button class="btn ghost" id="btnOut" hidden>Déconnexion</button></header>
+
+<div class="login" id="login">
+  <div class="card">
+    <h2 style="margin-bottom:10px">Connexion admin</h2>
+    <input type="tel" id="phone" placeholder="Numéro (6 XX XX XX XX)">
+    <input type="text" id="otp" placeholder="Code SMS" hidden>
+    <button class="btn accent" id="btnAuth" style="width:100%">Recevoir le code</button>
+  </div>
+</div>
+
+<nav id="nav" hidden>
+  <button data-t="kyc" class="on">KYC <span class="n" id="nKyc" hidden></span></button>
+  <button data-t="missions">Missions <span class="n" id="nFail" hidden></span></button>
+  <button data-t="payouts">Reversements <span class="n" id="nPay" hidden></span></button>
+  <button data-t="reviews">Avis</button>
+</nav>
+<main id="main" hidden></main>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://krqzvlcqorqiqwxkkvqw.supabase.co';   // 
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtycXp2bGNxb3JxaXF3eGtrdnF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ2NzAyMDQsImV4cCI6MjEwMDI0NjIwNH0.-89kluSbySWqZggmr_dXpHeP70lyrFxof40P-6Kfgrs';                // ← à remplir
+const FN = '/.netlify/functions';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const $ = (id) => document.getElementById(id);
+const fcfa = (n) => (n ?? 0).toLocaleString('fr-FR') + ' FCFA';
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g,(c)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');
+  clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),3000);}
+let TAB='kyc', TRADES={}, ZONES={};
+
+/* ---------- Auth ---------- */
+let otpPhone=null;
+$('btnAuth').onclick = async () => {
+  if(!otpPhone){
+    const d=$('phone').value.replace(/\D/g,'');
+    const p=/^237\d{9}$/.test(d)?'+'+d:(/^6\d{8}$/.test(d)?'+237'+d:null);
+    if(!p) return toast('Numéro invalide');
+    const {error}=await sb.auth.signInWithOtp({phone:p});
+    if(error) return toast('Envoi impossible');
+    otpPhone=p; $('otp').hidden=false; $('btnAuth').textContent='Valider';
+  } else {
+    const {error}=await sb.auth.verifyOtp({phone:otpPhone,token:$('otp').value.trim(),type:'sms'});
+    if(error) return toast('Code incorrect');
+    boot();
+  }
+};
+$('btnOut').onclick=async()=>{await sb.auth.signOut();location.reload();};
+
+async function boot(){
+  const {data:{user}}=await sb.auth.getUser();
+  if(!user) return;
+  const {data:p}=await sb.from('profiles').select('role').eq('id',user.id).maybeSingle();
+  if(p?.role!=='admin'){ toast('Accès réservé — ce compte n’est pas admin'); return; }
+  const [{data:t},{data:z}]=await Promise.all([sb.from('trades').select('*'),sb.from('zones').select('*')]);
+  (t||[]).forEach(x=>TRADES[x.id]=x.label_fr); (z||[]).forEach(x=>ZONES[x.id]=x.label);
+  $('login').hidden=true; $('nav').hidden=false; $('main').hidden=false; $('btnOut').hidden=false;
+  render();
+  setInterval(refreshBadges, 30000); refreshBadges();
+}
+$('nav').onclick=(e)=>{const b=e.target.closest('button');if(!b)return;
+  TAB=b.dataset.t; document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b)); render();};
+
+async function refreshBadges(){
+  const [{count:k},{count:f},{count:p}]=await Promise.all([
+    sb.from('artisan_details').select('*',{count:'exact',head:true}).eq('kyc_status','pending'),
+    sb.from('missions').select('*',{count:'exact',head:true}).eq('status','dispatch_failed'),
+    sb.from('payouts').select('*',{count:'exact',head:true}).eq('status','pending'),
+  ]);
+  const set=(id,n)=>{$(id).hidden=!n;$(id).textContent=n;};
+  set('nKyc',k);set('nFail',f);set('nPay',p);
+}
+
+function render(){ ({kyc:renderKyc,missions:renderMissions,payouts:renderPayouts,reviews:renderReviews})[TAB](); }
+
+/* ---------- KYC ---------- */
+async function renderKyc(){
+  const m=$('main'); m.innerHTML='<h2 style="margin:10px 0">Dossiers artisans</h2>';
+  const {data}=await sb.from('artisan_details').select('*, profiles!inner(full_name,phone)')
+    .order('created_at',{ascending:false}).limit(40);
+  if(!data?.length) return m.insertAdjacentHTML('beforeend','<div class="empty">Aucun dossier.</div>');
+  for(const d of data){
+    const c=document.createElement('div'); c.className='card';
+    const [tr,zo]=await Promise.all([
+      sb.from('artisan_trades').select('trade_id').eq('profile_id',d.profile_id),
+      sb.from('artisan_zones').select('zone_id').eq('profile_id',d.profile_id)]);
+    c.innerHTML=`
+      <div class="row">
+        <div class="grow">
+          <b>${esc(d.profiles.full_name)}</b> · <span class="sub">${d.profiles.phone} · MoMo ${d.momo_number||'—'} ${d.momo_verified?'✔':'⚠ non vérifié'}</span><br>
+          <span class="sub">${(tr.data||[]).map(x=>TRADES[x.trade_id]).join(', ')} — ${(zo.data||[]).map(x=>ZONES[x.zone_id]).join(', ')}</span>
+        </div>
+        <span class="tag ${{pending:'warn',approved:'ok',rejected:'bad'}[d.kyc_status]}">${d.kyc_status}</span>
+      </div>
+      <div class="kyc-imgs" data-imgs></div>
+      <div class="row" data-actions></div>`;
+    m.appendChild(c);
+    // CNI (signed URLs — policy kyc_admin_read)
+    const imgs=c.querySelector('[data-imgs]');
+    for(const path of [d.cni_recto_path,d.cni_verso_path].filter(Boolean)){
+      const {data:s}=await sb.storage.from('kyc').createSignedUrl(path,600);
+      if(s?.signedUrl) imgs.insertAdjacentHTML('beforeend',`<img src="${s.signedUrl}" alt="CNI">`);
+    }
+    const act=c.querySelector('[data-actions]');
+    if(d.kyc_status==='pending'){
+      act.innerHTML=`<button class="btn ok">✔ Approuver + badge Vérifié</button>
+        <button class="btn bad">Rejeter</button>`;
+      act.children[0].onclick=()=>decideKyc(d.profile_id,'approved',c);
+      act.children[1].onclick=()=>decideKyc(d.profile_id,'rejected',c);
+    } else if(d.kyc_status==='approved'){
+      act.innerHTML=`<button class="btn ghost">${d.momo_verified?'MoMo vérifié ✔':'Marquer MoMo vérifié'}</button>
+        <button class="btn ghost">${d.recommended_badge?'★ Recommandé':'Attribuer ★ Recommandé'}</button>`;
+      act.children[0].onclick=async()=>{await sb.from('artisan_details').update({momo_verified:true}).eq('profile_id',d.profile_id);toast('MoMo marqué vérifié');renderKyc();};
+      act.children[1].onclick=async()=>{await sb.from('artisan_details').update({recommended_badge:!d.recommended_badge}).eq('profile_id',d.profile_id);renderKyc();};
+    }
+  }
+}
+async function decideKyc(id,status,card){
+  const {error}=await sb.from('artisan_details').update({
+    kyc_status:status, verified_badge:status==='approved',
+  }).eq('profile_id',id);
+  if(error) return toast('Échec — réessaie');
+  toast(status==='approved'?'Artisan approuvé ✔ (préviens-le par SMS/WhatsApp)':'Dossier rejeté');
+  renderKyc(); refreshBadges();
+}
+
+/* ---------- Missions ---------- */
+async function renderMissions(){
+  const m=$('main'); m.innerHTML='<h2 style="margin:10px 0">Missions</h2>';
+  const {data}=await sb.from('missions').select('*').order('created_at',{ascending:false}).limit(50);
+  if(!data?.length) return m.insertAdjacentHTML('beforeend','<div class="empty">Aucune mission.</div>');
+  const fails=data.filter(x=>x.status==='dispatch_failed');
+  if(fails.length) m.insertAdjacentHTML('beforeend',
+    `<div class="card" style="border-color:var(--danger)"><b style="color:var(--danger)">⚠ ${fails.length} dispatch échoué(s)</b><p class="sub">Appelle un artisan du métier/quartier et attribue manuellement (SQL ou phase 2 : bouton d’attribution).</p></div>`);
+  const rows=data.map(x=>`<tr>
+    <td>${new Date(x.created_at).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</td>
+    <td>${TRADES[x.trade_id]||x.trade_id}</td><td>${ZONES[x.zone_id]||x.zone_id}</td>
+    <td><span class="tag ${x.status==='dispatch_failed'?'bad':(['paid','closed'].includes(x.status)?'ok':'warn')}">${x.status}</span></td>
+    <td>${x.final_amount_fcfa?fcfa(x.final_amount_fcfa):'—'}</td>
+    <td class="sub">${esc(x.repere).slice(0,40)}</td></tr>`).join('');
+  m.insertAdjacentHTML('beforeend',`<div class="card" style="overflow-x:auto"><table>
+    <tr><th>Date</th><th>Métier</th><th>Quartier</th><th>Statut</th><th>Montant</th><th>Repère</th></tr>${rows}</table></div>`);
+}
+
+/* ---------- Reversements ---------- */
+async function renderPayouts(){
+  const m=$('main'); m.innerHTML='<h2 style="margin:10px 0">Reversements artisans</h2>';
+  const {data}=await sb.from('payouts').select('*, profiles!payouts_artisan_id_fkey(full_name)')
+    .order('created_at',{ascending:false}).limit(50);
+  if(!data?.length) return m.insertAdjacentHTML('beforeend','<div class="empty">Aucun reversement.</div>');
+  for(const p of data){
+    const c=document.createElement('div'); c.className='card';
+    c.innerHTML=`<div class="row">
+      <div class="grow"><b>${esc(p.profiles?.full_name||'—')}</b> · ${fcfa(p.amount_fcfa)}
+        <br><span class="sub">Mission ${p.mission_id.slice(0,8)} · ${new Date(p.created_at).toLocaleDateString('fr-FR')}</span></div>
+      <span class="tag ${{pending:'warn',sent:'ok',failed:'bad'}[p.status]}">${p.status}</span>
+      ${p.status!=='sent'?'<button class="btn accent">💸 Reverser</button>':''}
+    </div>`;
+    const b=c.querySelector('.btn');
+    if(b) b.onclick=async()=>{
+      b.disabled=true;
+      const {data:{session}}=await sb.auth.getSession();
+      const res=await fetch(`${FN}/campay-payout`,{method:'POST',
+        headers:{'Content-Type':'application/json',Authorization:`Bearer ${session.access_token}`},
+        body:JSON.stringify({payout_id:p.id})});
+      const out=await res.json().catch(()=>({}));
+      toast(res.ok?'Reversement envoyé ✔':(out.error||'Échec — solde CamPay ?'));
+      renderPayouts(); refreshBadges();
+    };
+    m.appendChild(c);
+  }
+}
+
+/* ---------- Avis ---------- */
+async function renderReviews(){
+  const m=$('main'); m.innerHTML='<h2 style="margin:10px 0">Modération des avis</h2>';
+  const {data}=await sb.from('reviews').select('*, profiles!reviews_artisan_id_fkey(full_name)')
+    .order('created_at',{ascending:false}).limit(50);
+  if(!data?.length) return m.insertAdjacentHTML('beforeend','<div class="empty">Aucun avis.</div>');
+  for(const r of data){
+    const c=document.createElement('div'); c.className='card';
+    c.innerHTML=`<div class="row">
+      <div class="grow">${'⭐'.repeat(r.rating)} <b>${esc(r.profiles?.full_name||'')}</b>
+        <p class="sub">${esc(r.comment||'(sans commentaire)')}</p></div>
+      <button class="btn ${r.is_visible?'bad':'ok'}">${r.is_visible?'Masquer':'Rétablir'}</button></div>`;
+    c.querySelector('.btn').onclick=async()=>{
+      await sb.from('reviews').update({is_visible:!r.is_visible}).eq('id',r.id);
+      renderReviews();
+    };
+    m.appendChild(c);
+  }
+}
+
+boot();
+</script>
+</body>
+</html>

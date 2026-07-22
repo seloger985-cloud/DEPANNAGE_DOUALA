@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#141B23">
+<title>Dépannage à domicile — Douala</title>
+<!-- TODO PWA : manifest.json + service worker. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F6F4EF; --card:#FFFFFF; --ink:#141B23; --steel:#5A6472;
+    --gilet:#FFB100; --gilet-ink:#3A2C00; --ok:#1F9D55; --danger:#D64545;
+    --line:#E4E0D6; --r:14px;
+  }
+  *{box-sizing:border-box; margin:0; -webkit-tap-highlight-color:transparent}
+  body{font-family:'Archivo',system-ui,sans-serif; background:var(--paper); color:var(--ink); min-height:100dvh; padding-bottom:24px}
+  h1,h2,h3{font-weight:900; letter-spacing:-.01em}
+  button{font-family:inherit; border:0; cursor:pointer}
+
+  header{position:sticky; top:0; z-index:20; background:var(--ink); color:#fff;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 16px; padding-top:calc(14px + env(safe-area-inset-top))}
+  header .brand{font-weight:900; font-size:1.05rem; text-transform:uppercase; letter-spacing:.06em}
+  header .brand small{display:block; font-weight:400; font-size:.68rem; letter-spacing:.12em; color:#B9C0C9}
+  header button{background:none; color:#B9C0C9; font-size:.8rem; font-weight:600}
+
+  main{padding:16px; max-width:560px; margin:0 auto}
+  .trust{display:flex; gap:8px; margin-bottom:14px}
+  .trust span{flex:1; background:var(--card); border:1px solid var(--line); border-radius:12px;
+    padding:10px 8px; font-size:.68rem; font-weight:600; color:var(--steel); text-align:center; line-height:1.35}
+  .trust b{display:block; font-size:1rem}
+
+  .card{background:var(--card); border:1px solid var(--line); border-radius:var(--r); padding:16px; margin-bottom:14px}
+  .meta{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px}
+  .tag{font-size:.72rem; font-weight:800; text-transform:uppercase; letter-spacing:.05em;
+    padding:4px 10px; border-radius:99px; background:var(--paper); color:var(--steel)}
+  .tag.trade{background:var(--ink); color:var(--gilet)}
+  .tag.ok{background:var(--ok); color:#fff}
+  .tag.warn{background:var(--gilet); color:var(--gilet-ink)}
+  .tag.danger{background:var(--danger); color:#fff}
+
+  .btn{width:100%; min-height:52px; border-radius:12px; font-size:1rem; font-weight:800;
+    display:flex; align-items:center; justify-content:center; gap:8px}
+  .btn:active{transform:scale(.98)}
+  .btn.accent{background:var(--gilet); color:var(--gilet-ink)}
+  .btn.dark{background:var(--ink); color:#fff}
+  .btn.ok{background:var(--ok); color:#fff}
+  .btn.ghost{background:var(--paper); color:var(--steel); border:1px solid var(--line)}
+  .btn.danger-line{background:none; color:var(--danger); border:1px solid var(--danger)}
+  .btn[disabled]{opacity:.5; pointer-events:none}
+  .row{display:flex; gap:10px}
+  .row .btn{flex:1}
+
+  label.f{display:block; font-size:.78rem; font-weight:800; text-transform:uppercase;
+    letter-spacing:.06em; color:var(--steel); margin:14px 0 6px}
+  input[type=text],input[type=tel],textarea{width:100%; padding:14px; border:1px solid var(--line);
+    border-radius:12px; font-family:inherit; font-size:1rem; background:#fff; color:var(--ink)}
+  textarea{min-height:90px; resize:vertical}
+  input:focus,textarea:focus{outline:3px solid var(--gilet); border-color:var(--gilet)}
+  .chips{display:flex; flex-wrap:wrap; gap:8px}
+  .chip{padding:10px 14px; border-radius:99px; border:1px solid var(--line); background:#fff;
+    font-size:.9rem; font-weight:600; color:var(--steel)}
+  .chip.sel{background:var(--ink); color:var(--gilet); border-color:var(--ink)}
+
+  /* Timeline de suivi */
+  .tl{margin:6px 0 14px}
+  .tl .step{display:flex; gap:12px; align-items:flex-start; padding:7px 0}
+  .tl .pt{width:14px; height:14px; border-radius:50%; border:3px solid var(--line); background:#fff; margin-top:2px; flex:none}
+  .tl .step.done .pt{background:var(--ok); border-color:var(--ok)}
+  .tl .step.now .pt{background:var(--gilet); border-color:var(--gilet-ink)}
+  .tl .step span{font-size:.88rem; color:var(--steel)}
+  .tl .step.done span{color:var(--ink)}
+  .tl .step.now span{color:var(--ink); font-weight:800}
+
+  .quote{border:2px solid var(--gilet); border-radius:var(--r); padding:14px; margin:12px 0; background:#FFFBF0}
+  .quote .amt{font-weight:900; font-size:1.6rem}
+  .quote .amt small{font-size:.75rem; font-weight:600; color:var(--steel)}
+  .quote p.det{font-size:.9rem; margin:8px 0 12px; line-height:1.45}
+
+  .artisan{display:flex; gap:12px; align-items:center; background:var(--paper); border-radius:12px; padding:12px; margin-bottom:12px}
+  .artisan .av{width:48px; height:48px; border-radius:50%; background:var(--ink); color:var(--gilet);
+    display:flex; align-items:center; justify-content:center; font-weight:900; font-size:1.1rem; flex:none}
+  .artisan .nm{font-weight:800; font-size:.95rem}
+  .artisan .st{font-size:.78rem; color:var(--steel)}
+
+  .guarantee{background:var(--ink); color:#fff; border-radius:var(--r); padding:14px 16px;
+    font-size:.85rem; line-height:1.5; margin-bottom:14px}
+  .guarantee b{color:var(--gilet)}
+
+  .stars{display:flex; gap:6px; font-size:1.9rem; margin:8px 0}
+  .stars button{background:none; filter:grayscale(1); opacity:.45}
+  .stars button.on{filter:none; opacity:1}
+
+  .empty{text-align:center; color:var(--steel); padding:44px 24px; font-size:.95rem; line-height:1.5}
+  .empty b{display:block; font-size:1.05rem; color:var(--ink); margin-bottom:6px}
+  .toast{position:fixed; left:16px; right:16px; bottom:20px; z-index:50; background:var(--ink); color:#fff;
+    padding:14px 16px; border-radius:12px; font-size:.9rem; font-weight:600; opacity:0; transform:translateY(8px);
+    transition:.25s; pointer-events:none}
+  .toast.show{opacity:1; transform:none}
+  .screen{display:none}
+  .screen.on{display:block}
+  .back{background:none; color:var(--steel); font-size:.85rem; font-weight:600; padding:0 0 12px}
+  .paywait{text-align:center; padding:18px 8px}
+  .paywait .big{font-size:2.2rem; margin-bottom:8px}
+  .sub{font-size:.85rem; color:var(--steel); line-height:1.5}
+  .hist p{display:flex; justify-content:space-between; gap:8px; padding:10px 0; border-top:1px solid var(--line); font-size:.88rem}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">Dépannage<small>Douala · à domicile</small></div>
+  <button id="btnLogout" hidden>Déconnexion</button>
+</header>
+
+<main>
+  <!-- ========== AUTH ========== -->
+  <section class="screen on" id="scr-auth">
+    <div class="trust">
+      <span><b>✔</b>Artisans vérifiés</span>
+      <span><b>🧾</b>Prix cadré avant travaux</span>
+      <span><b>🛡</b>Garantie 7 jours</span>
+    </div>
+    <div class="card">
+      <h2 style="margin-bottom:6px">Connexion</h2>
+      <p class="sub">Ton numéro reçoit un code par SMS. Pas de mot de passe.</p>
+      <label class="f" for="phone">Numéro de téléphone</label>
+      <input type="tel" id="phone" placeholder="6 XX XX XX XX" inputmode="numeric" autocomplete="tel">
+      <div id="otpZone" hidden>
+        <label class="f" for="otp">Code reçu par SMS</label>
+        <input type="text" id="otp" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="123456">
+      </div>
+      <div style="margin-top:16px"><button class="btn accent" id="btnAuth">Recevoir mon code</button></div>
+    </div>
+  </section>
+
+  <!-- ========== ACCUEIL ========== -->
+  <section class="screen" id="scr-home">
+    <div class="trust">
+      <span><b>✔</b>Artisans vérifiés</span>
+      <span><b>🧾</b>Prix cadré avant travaux</span>
+      <span><b>🛡</b>Garantie 7 jours</span>
+    </div>
+    <button class="btn dark" id="btnNew" style="margin-bottom:16px">🛠 Demander un dépannage</button>
+    <h2 style="font-size:1.05rem; margin-bottom:10px">Mes demandes</h2>
+    <div id="missionList"></div>
+    <div class="card hist" id="histCard" hidden>
+      <h3 style="font-size:.95rem">Historique</h3>
+      <div id="histList"></div>
+    </div>
+  </section>
+
+  <!-- ========== NOUVELLE DEMANDE ========== -->
+  <section class="screen" id="scr-new">
+    <button class="back" data-home>← Retour</button>
+    <div class="card">
+      <h2 style="margin-bottom:4px">Ton problème</h2>
+      <label class="f">De quel métier as-tu besoin ?</label>
+      <div class="chips" id="nTrades"></div>
+      <label class="f">Ton quartier</label>
+      <div class="chips" id="nZones"></div>
+      <label class="f" for="nDesc">Décris le problème</label>
+      <textarea id="nDesc" placeholder="ex : La douche fuit au niveau de la colonne, l’eau coule même robinet fermé"></textarea>
+      <label class="f" for="nRepere">Point de repère précis</label>
+      <input type="text" id="nRepere" placeholder="ex : Rue Njo-Njo, immeuble bleu après la pharmacie, 2ᵉ étage">
+      <label class="f" for="nPhotos">Photos (recommandé)</label>
+      <input type="file" id="nPhotos" accept="image/*" multiple>
+      <label class="f">Quand ?</label>
+      <div class="chips" id="nWhen">
+        <button type="button" class="chip sel" data-w="ASAP">Dès que possible</button>
+        <button type="button" class="chip" data-w="today_pm">Aujourd’hui après-midi</button>
+        <button type="button" class="chip" data-w="tomorrow">Demain</button>
+      </div>
+      <div class="guarantee" style="margin-top:16px" id="feeBox">
+        Forfait déplacement + diagnostic : <b id="feeAmt">—</b><br>
+        Payé d’avance, il couvre le déplacement de l’artisan. Ensuite : devis dans l’app, <b>aucuns travaux sans ton accord</b>.
+      </div>
+      <button class="btn accent" id="btnCreate">Réserver et payer le forfait</button>
+    </div>
+  </section>
+
+  <!-- ========== DÉTAIL MISSION ========== -->
+  <section class="screen" id="scr-detail">
+    <button class="back" data-home>← Mes demandes</button>
+    <div id="detailWrap"></div>
+  </section>
+</main>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ================= CONFIG ================= */
+const SUPABASE_URL = 'https://krqzvlcqorqiqwxkkvqw.supabase.co';   // ← à remplir
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtycXp2bGNxb3JxaXF3eGtrdnF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ2NzAyMDQsImV4cCI6MjEwMDI0NjIwNH0.-89kluSbySWqZggmr_dXpHeP70lyrFxof40P-6Kfgrs';                // ← à remplir
+const FN = '/.netlify/functions';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* ================= ÉTAT ================= */
+const S = { user:null, profile:null, trades:[], zones:[], missions:[], current:null, channel:null, poll:null };
+const $ = (id) => document.getElementById(id);
+const fcfa = (n) => (n ?? 0).toLocaleString('fr-FR') + ' FCFA';
+function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show');
+  clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),3200); }
+function show(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on')); $(id).classList.add('on'); }
+function normPhone(raw){ const d=String(raw).replace(/\D/g,'');
+  if(/^237\d{9}$/.test(d)) return '+'+d; if(/^6\d{8}$/.test(d)) return '+237'+d; return null; }
+function escapeHtml(s){ return String(s ?? '').replace(/[&<>"']/g,(c)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+document.querySelectorAll('[data-home]').forEach(b=>b.onclick=()=>{ show('scr-home'); loadMissions(); });
+
+/* ================= AUTH ================= */
+let otpPhone = null;
+$('btnAuth').addEventListener('click', async () => {
+  const btn = $('btnAuth');
+  if (!otpPhone) {
+    const p = normPhone($('phone').value);
+    if (!p) return toast('Numéro invalide — format 6 XX XX XX XX');
+    btn.disabled = true;
+    const { error } = await sb.auth.signInWithOtp({ phone: p });
+    btn.disabled = false;
+    if (error) return toast('Envoi du code impossible. Réessaie.');
+    otpPhone = p; $('otpZone').hidden = false; $('otp').focus();
+    btn.textContent = 'Valider le code';
+  } else {
+    btn.disabled = true;
+    const { error } = await sb.auth.verifyOtp({ phone: otpPhone, token: $('otp').value.trim(), type: 'sms' });
+    btn.disabled = false;
+    if (error) return toast('Code incorrect ou expiré');
+    boot();
+  }
+});
+$('btnLogout').addEventListener('click', async () => { await sb.auth.signOut(); location.reload(); });
+
+/* ================= BOOT ================= */
+async function boot() {
+  const { data:{ user } } = await sb.auth.getUser();
+  if (!user) return show('scr-auth');
+  S.user = user; $('btnLogout').hidden = false;
+
+  const [{ data: trades }, { data: zones }] = await Promise.all([
+    sb.from('trades').select('*').eq('is_active', true),
+    sb.from('zones').select('*').eq('is_active', true),
+  ]);
+  S.trades = trades || []; S.zones = zones || [];
+
+  const { data: profile } = await sb.from('profiles').select('*').eq('id', user.id).maybeSingle();
+  if (!profile) {
+    const name = prompt('Bienvenue ! Ton nom complet :');
+    if (!name || name.trim().length < 3) return toast('Nom requis pour continuer');
+    await sb.from('profiles').insert({ id: user.id, role: 'client', full_name: name.trim(), phone: user.phone });
+  }
+  S.profile = profile || { full_name: '' };
+
+  subscribeRealtime();
+  await loadMissions();
+  show('scr-home');
+}
+
+/* ================= LISTE ================= */
+const ACTIVE = ['pending_payment','dispatching','dispatch_failed','assigned','en_route','arrived','quote_pending','in_progress','done_artisan','confirmed'];
+const DONE = ['paid','closed','quote_refused','cancelled_client','cancelled_artisan'];
+const STATUS_FR = {
+  pending_payment:'Forfait à payer', dispatching:'Recherche d’un artisan…',
+  dispatch_failed:'On te rappelle très vite', assigned:'Artisan trouvé ✔',
+  en_route:'Artisan en route', arrived:'Artisan sur place',
+  quote_pending:'Devis reçu — à toi de décider', in_progress:'Travaux en cours',
+  done_artisan:'À confirmer : travaux terminés ?', confirmed:'Solde à payer',
+  paid:'Payée', closed:'Terminée', quote_refused:'Devis refusé',
+  cancelled_client:'Annulée', cancelled_artisan:'Annulée par l’artisan',
+};
+const TRADE_LABEL = (id) => (S.trades.find(t=>t.id===id)?.label_fr) || id;
+const zoneLabel = (id) => (S.zones.find(z=>z.id===id)?.label) || id;
+
+async function loadMissions() {
+  const { data } = await sb.from('missions').select('*')
+    .eq('client_id', S.user.id).order('created_at', { ascending:false });
+  S.missions = data || [];
+  const act = S.missions.filter(m=>ACTIVE.includes(m.status));
+  const done = S.missions.filter(m=>DONE.includes(m.status));
+  const wrap = $('missionList');
+  wrap.innerHTML = act.length ? '' :
+    `<div class="empty"><b>Aucune demande en cours</b>Douche cassée, panne de courant, serrure bloquée ? Un artisan vérifié arrive.</div>`;
+  for (const m of act) {
+    const c = document.createElement('div');
+    c.className = 'card';
+    c.innerHTML = `
+      <div class="meta"><span class="tag trade">${TRADE_LABEL(m.trade_id)}</span>
+        <span class="tag">${zoneLabel(m.zone_id)}</span>
+        <span class="tag ${m.status==='quote_pending'||m.status==='confirmed'||m.status==='done_artisan'?'warn':''}">${STATUS_FR[m.status]}</span></div>
+      <p style="font-size:.9rem;color:var(--steel)">${escapeHtml(m.description.slice(0,90))}${m.description.length>90?'…':''}</p>
+      <button class="btn ghost" style="margin-top:10px;min-height:44px">Ouvrir le suivi</button>`;
+    c.querySelector('.btn').onclick = () => openDetail(m.id);
+    wrap.appendChild(c);
+  }
+  $('histCard').hidden = !done.length;
+  $('histList').innerHTML = done.map(m=>`
+    <p><span>${TRADE_LABEL(m.trade_id)} · ${new Date(m.created_at).toLocaleDateString('fr-FR')}</span>
+       <b>${m.final_amount_fcfa ? fcfa(m.final_amount_fcfa) : '—'}</b>
+       <span style="color:var(--steel)">${STATUS_FR[m.status]}</span></p>`).join('');
+}
+
+/* ================= NOUVELLE DEMANDE ================= */
+const nSel = { trade:null, zone:null, when:'ASAP' };
+$('btnNew').onclick = () => {
+  $('nTrades').innerHTML = S.trades.map(t=>`<button type="button" class="chip" data-id="${t.id}">${t.label_fr}</button>`).join('');
+  $('nZones').innerHTML = S.zones.map(z=>`<button type="button" class="chip" data-id="${z.id}">${z.label}</button>`).join('');
+  show('scr-new');
+};
+$('nTrades').addEventListener('click', (e)=>{
+  const b = e.target.closest('.chip'); if(!b) return;
+  nSel.trade = b.dataset.id;
+  $('nTrades').querySelectorAll('.chip').forEach(x=>x.classList.toggle('sel', x===b));
+  const t = S.trades.find(x=>x.id===nSel.trade);
+  $('feeAmt').textContent = fcfa(t.diagnostic_fee_fcfa);
+});
+$('nZones').addEventListener('click', (e)=>{
+  const b = e.target.closest('.chip'); if(!b) return;
+  nSel.zone = b.dataset.id;
+  $('nZones').querySelectorAll('.chip').forEach(x=>x.classList.toggle('sel', x===b));
+});
+$('nWhen').addEventListener('click', (e)=>{
+  const b = e.target.closest('.chip'); if(!b) return;
+  nSel.when = b.dataset.w;
+  $('nWhen').querySelectorAll('.chip').forEach(x=>x.classList.toggle('sel', x===b));
+});
+
+$('btnCreate').addEventListener('click', async () => {
+  const desc = $('nDesc').value.trim(), repere = $('nRepere').value.trim();
+  if (!nSel.trade) return toast('Choisis le métier');
+  if (!nSel.zone) return toast('Choisis ton quartier');
+  if (desc.length < 10) return toast('Décris le problème (10 caractères min.)');
+  if (repere.length < 5) return toast('Le point de repère aide l’artisan à te trouver');
+  const btn = $('btnCreate'); btn.disabled = true; btn.textContent = 'Création…';
+  try {
+    // 1. Photos
+    const files = [...$('nPhotos').files].slice(0, 4);
+    const paths = [];
+    for (const f of files) {
+      const path = `${S.user.id}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.jpg`;
+      const { error } = await sb.storage.from('mission-photos').upload(path, f);
+      if (!error) paths.push(path);
+    }
+    // 2. Mission (le forfait est imposé par le serveur — trigger patch 03)
+    const { data: mission, error } = await sb.from('missions').insert({
+      client_id: S.user.id, trade_id: nSel.trade, zone_id: nSel.zone,
+      repere, description: desc, photos: paths,
+      urgency: nSel.when === 'ASAP',
+      preferred_slot: { ASAP:'Dès que possible', today_pm:'Aujourd’hui après-midi', tomorrow:'Demain' }[nSel.when],
+      diagnostic_fee_fcfa: 0, // écrasé par le trigger
+    }).select().single();
+    if (error) throw error;
+    ['nDesc','nRepere'].forEach(id=>$(id).value=''); $('nPhotos').value='';
+    openDetail(mission.id);
+  } catch (e) {
+    console.error(e); toast('Création impossible. Vérifie ta connexion.');
+  } finally { btn.disabled = false; btn.textContent = 'Réserver et payer le forfait'; }
+});
+
+/* ================= DÉTAIL & SUIVI ================= */
+const TL_STEPS = [
+  ['pending_payment','Forfait payé'],
+  ['dispatching','Artisan trouvé'],
+  ['en_route','Artisan sur place'],
+  ['quote_pending','Devis accepté'],
+  ['in_progress','Travaux terminés'],
+  ['confirmed','Solde payé'],
+];
+const ORDER = ['pending_payment','dispatching','assigned','en_route','arrived','quote_pending','in_progress','done_artisan','confirmed','paid','closed'];
+
+async function openDetail(id) {
+  const { data: m } = await sb.from('missions').select('*').eq('id', id).single();
+  if (!m) return toast('Demande introuvable');
+  S.current = m;
+  show('scr-detail');
+  renderDetail(m);
+}
+
+async function renderDetail(m) {
+  const w = $('detailWrap');
+  const pos = ORDER.indexOf(m.status);
+  const tl = TL_STEPS.map(([st, label]) => {
+    const stepPos = ORDER.indexOf(st);
+    const cls = pos > stepPos ? 'done' : (pos === stepPos || (st==='pending_payment'&&pos===0) ? 'now' : '');
+    return `<div class="step ${cls}"><div class="pt"></div><span>${label}</span></div>`;
+  }).join('');
+
+  let artisanBlock = '';
+  if (m.assigned_artisan) {
+    const { data: a } = await sb.from('public_artisans').select('*').eq('id', m.assigned_artisan).maybeSingle();
+    const { data: ap } = await sb.from('profiles').select('phone').eq('id', m.assigned_artisan).maybeSingle();
+    if (a) artisanBlock = `
+      <div class="artisan">
+        <div class="av">${escapeHtml((a.full_name||'?')[0].toUpperCase())}</div>
+        <div style="flex:1">
+          <div class="nm">${escapeHtml(a.full_name)} ${a.verified_badge?'· ✔ Vérifié':''}</div>
+          <div class="st">★ ${Number(a.avg_rating).toFixed(1)} · ${a.missions_done} mission${a.missions_done>1?'s':''}</div>
+        </div>
+        ${ap?.phone ? `<a class="btn dark" style="flex:none;min-height:44px;padding:0 16px;width:auto;text-decoration:none" href="tel:${ap.phone}">📞</a>` : ''}
+      </div>`;
+  }
+
+  w.innerHTML = `
+    <div class="card">
+      <div class="meta"><span class="tag trade">${TRADE_LABEL(m.trade_id)}</span>
+        <span class="tag">${zoneLabel(m.zone_id)}</span>
+        <span class="tag ${['cancelled_client','cancelled_artisan'].includes(m.status)?'danger':(m.status==='paid'||m.status==='closed'?'ok':'warn')}">${STATUS_FR[m.status]}</span></div>
+      <p style="font-size:.92rem; margin-bottom:10px">${escapeHtml(m.description)}</p>
+      <div class="tl">${tl}</div>
+      ${artisanBlock}
+      <div id="actionZone"></div>
+    </div>
+    <div class="guarantee">🛡 <b>Garantie 7 jours</b> : si le problème réparé revient sous 7 jours, l’artisan repasse gratuitement. Valable uniquement pour les missions payées dans l’app.</div>`;
+  renderClientActions($('actionZone'), m);
+}
+
+async function renderClientActions(zone, m) {
+  const pay = async (kind) => {
+    const phone = normPhone(prompt('Numéro Mobile Money qui paie :', S.user.phone.replace('+','')) || '');
+    if (!phone) return toast('Numéro invalide');
+    zone.innerHTML = `<div class="paywait"><div class="big">📲</div>
+      <p style="font-weight:800">Valide le paiement sur ton téléphone</p>
+      <p class="sub">Un message Orange Money / MTN MoMo arrive sur le ${phone}. Compose ton code secret pour confirmer. Cette page se met à jour toute seule.</p></div>`;
+    const { data:{ session } } = await sb.auth.getSession();
+    const res = await fetch(`${FN}/create-mission-payment`, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', Authorization:`Bearer ${session.access_token}` },
+      body: JSON.stringify({ mission_id: m.id, kind, payer_phone: phone.replace('+','') }),
+    });
+    const out = await res.json().catch(()=>({}));
+    if (!res.ok) { toast(out.error || 'Paiement impossible'); renderDetail(m); return; }
+    if (out.ussd_code) zone.querySelector('.sub').insertAdjacentHTML('beforeend',
+      `<br><br>Rien reçu ? Compose : <b>${escapeHtml(out.ussd_code)}</b>`);
+    startPolling(m.id);
+  };
+
+  if (m.status === 'pending_payment') {
+    zone.innerHTML = `<button class="btn accent">Payer le forfait · ${fcfa(m.diagnostic_fee_fcfa)}</button>
+      <button class="btn danger-line" style="margin-top:8px">Annuler la demande</button>`;
+    zone.children[0].onclick = () => pay('diagnostic_fee');
+    zone.children[1].onclick = () => act(m, 'cancel_client');
+  }
+  else if (m.status === 'dispatching') {
+    zone.innerHTML = `<div class="paywait"><div class="big">📡</div>
+      <p style="font-weight:800">Recherche de l’artisan le plus proche…</p>
+      <p class="sub">Les meilleurs artisans de ${zoneLabel(m.zone_id)} reçoivent ta demande. Réponse en général sous 10 minutes.</p></div>`;
+    startPolling(m.id);
+  }
+  else if (m.status === 'dispatch_failed') {
+    zone.innerHTML = `<div class="paywait"><div class="big">☎️</div>
+      <p style="font-weight:800">On prend le relais</p>
+      <p class="sub">Aucun artisan n’a répondu à temps — notre équipe t’appelle très vite pour t’en trouver un. Ton forfait est protégé : servi ou remboursé.</p></div>`;
+  }
+  else if (m.status === 'quote_pending') {
+    const { data: q } = await sb.from('quotes').select('*')
+      .eq('mission_id', m.id).eq('status','proposed')
+      .order('created_at',{ascending:false}).limit(1).maybeSingle();
+    if (!q) { zone.innerHTML = '<p class="sub">Devis en préparation…</p>'; return; }
+    zone.innerHTML = `
+      <div class="quote">
+        <div class="amt">${fcfa(q.amount_fcfa)} <small>main-d’œuvre</small></div>
+        <p class="det">${escapeHtml(q.details)}</p>
+        <div class="row">
+          <button class="btn ghost">Refuser</button>
+          <button class="btn accent">Accepter le devis</button>
+        </div>
+      </div>
+      <p class="sub">Refuser = les travaux ne se font pas ; le forfait déplacement reste acquis à l’artisan (il s’est déplacé).</p>`;
+    zone.querySelectorAll('.btn')[1].onclick = () => act(m, 'accept_quote', { quote_id: q.id });
+    zone.querySelectorAll('.btn')[0].onclick = () => {
+      if (confirm('Refuser ce devis ? Les travaux ne seront pas réalisés.')) act(m, 'refuse_quote', { quote_id: q.id });
+    };
+  }
+  else if (m.status === 'done_artisan') {
+    zone.innerHTML = `<button class="btn ok">✅ Je confirme : travaux terminés</button>
+      <p class="sub" style="margin-top:8px">Un problème avec la prestation ? Écris-nous avant de confirmer — sans réaction sous 24 h, la mission est confirmée automatiquement.</p>`;
+    zone.querySelector('.btn').onclick = () => act(m, 'confirm_done');
+  }
+  else if (m.status === 'confirmed') {
+    zone.innerHTML = `<button class="btn accent">Payer le solde · ${fcfa(m.final_amount_fcfa)}</button>
+      <p class="sub" style="margin-top:8px">Montant du devis que tu as accepté. Ta facture arrive juste après le paiement.</p>`;
+    zone.querySelector('.btn').onclick = () => pay('balance');
+  }
+  else if (m.status === 'paid' || m.status === 'closed') {
+    const { data: rev } = await sb.from('reviews').select('id').eq('mission_id', m.id).maybeSingle();
+    if (rev) { zone.innerHTML = `<p class="sub">Merci pour ton évaluation ⭐ — mission terminée.</p>`; return; }
+    let stars = 0;
+    zone.innerHTML = `
+      <p style="font-weight:800; font-size:.95rem">Comment ça s’est passé ?</p>
+      <div class="stars">${[1,2,3,4,5].map(i=>`<button data-s="${i}">⭐</button>`).join('')}</div>
+      <textarea id="revComment" placeholder="Un mot sur l’intervention (optionnel)"></textarea>
+      <button class="btn dark" style="margin-top:10px">Envoyer mon avis</button>`;
+    zone.querySelector('.stars').onclick = (e) => {
+      const b = e.target.closest('button'); if(!b) return;
+      stars = +b.dataset.s;
+      zone.querySelectorAll('.stars button').forEach((x,i)=>x.classList.toggle('on', i < stars));
+    };
+    zone.querySelector('.btn').onclick = async () => {
+      if (!stars) return toast('Choisis une note de 1 à 5 étoiles');
+      const { error } = await sb.from('reviews').insert({
+        mission_id: m.id, client_id: S.user.id, artisan_id: m.assigned_artisan,
+        rating: stars, comment: $('revComment').value.trim() || null,
+      });
+      if (error) return toast('Envoi impossible — réessaie');
+      toast('Merci ! Ton avis aide les prochains clients.');
+      renderDetail(m);
+    };
+  }
+  else if (['assigned','en_route','arrived','in_progress'].includes(m.status)) {
+    zone.innerHTML = `<p class="sub">${{
+      assigned:'Ton artisan prépare son départ.',
+      en_route:'Il est en route — le bouton 📞 permet de le joindre.',
+      arrived:'Il examine le problème et prépare son devis.',
+      in_progress:`Travaux en cours — montant convenu : ${fcfa(m.final_amount_fcfa)}.`,
+    }[m.status]}</p>`;
+  }
+}
+
+async function act(m, action, extra = {}) {
+  const { data:{ session } } = await sb.auth.getSession();
+  const res = await fetch(`${FN}/mission-action`, {
+    method:'POST',
+    headers:{ 'Content-Type':'application/json', Authorization:`Bearer ${session.access_token}` },
+    body: JSON.stringify({ mission_id: m.id, action, ...extra }),
+  });
+  const out = await res.json().catch(()=>({}));
+  if (!res.ok) return toast(out.error || 'Action impossible');
+  const msg = { accept_quote:'Devis accepté — les travaux peuvent commencer',
+    refuse_quote:'Devis refusé', confirm_done:'Merci ! Reste le solde à payer',
+    cancel_client:'Demande annulée' }[action];
+  if (msg) toast(msg);
+  openDetail(m.id);
+}
+
+/* ================= REALTIME + POLLING ================= */
+function subscribeRealtime() {
+  if (S.channel) sb.removeChannel(S.channel);
+  S.channel = sb.channel('client-live')
+    .on('postgres_changes',
+      { event:'UPDATE', schema:'public', table:'missions', filter:`client_id=eq.${S.user.id}` },
+      (payload) => {
+        loadMissions();
+        if (S.current && payload.new.id === S.current.id && $('scr-detail').classList.contains('on'))
+          openDetail(S.current.id);
+      })
+    .subscribe();
+}
+function startPolling(missionId) {
+  clearInterval(S.poll);
+  S.poll = setInterval(async () => {
+    if (!$('scr-detail').classList.contains('on')) return clearInterval(S.poll);
+    const { data: m } = await sb.from('missions').select('status').eq('id', missionId).single();
+    if (m && S.current && m.status !== S.current.status) { clearInterval(S.poll); openDetail(missionId); }
+  }, 5000);
+}
+
+boot();
+</script>
+</body>
+</html>
