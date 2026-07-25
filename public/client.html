@@ -3,48 +3,48 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#141B23">
+<meta name="theme-color" content="#0F0F0F">
 <title>Dépannage à domicile — Douala</title>
 <!-- TODO PWA : manifest.json + service worker. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
 <style>
   :root{
-    --paper:#F6F4EF; --card:#FFFFFF; --ink:#141B23; --steel:#5A6472;
-    --gilet:#FFB100; --gilet-ink:#3A2C00; --ok:#1F9D55; --danger:#D64545;
-    --line:#E4E0D6; --r:14px;
+    --paper:#FAF9F7; --card:#FFFFFF; --ink:#0F0F0F; --steel:#5A6472;
+    --accent:#F5620A; --accent-ink:#FFFFFF; --ok:#1F9D55; --danger:#D64545;
+    --line:#E7E3DC; --r:14px;
   }
   *{box-sizing:border-box; margin:0; -webkit-tap-highlight-color:transparent}
-  body{font-family:'Archivo',system-ui,sans-serif; background:var(--paper); color:var(--ink); min-height:100dvh; padding-bottom:24px}
-  h1,h2,h3{font-weight:900; letter-spacing:-.01em}
+  body{font-family:'DM Sans',system-ui,sans-serif; background:var(--paper); color:var(--ink); min-height:100dvh; padding-bottom:24px}
+  h1,h2,h3{font-family:'Syne',sans-serif; font-weight:800; letter-spacing:-.01em}
   button{font-family:inherit; border:0; cursor:pointer}
 
   header{position:sticky; top:0; z-index:20; background:var(--ink); color:#fff;
     display:flex; align-items:center; justify-content:space-between;
     padding:14px 16px; padding-top:calc(14px + env(safe-area-inset-top))}
-  header .brand{font-weight:900; font-size:1.05rem; text-transform:uppercase; letter-spacing:.06em}
-  header .brand small{display:block; font-weight:400; font-size:.68rem; letter-spacing:.12em; color:#B9C0C9}
-  header button{background:none; color:#B9C0C9; font-size:.8rem; font-weight:600}
+  header .brand{font-family:'Syne',sans-serif; font-weight:800; font-size:1.05rem; text-transform:uppercase; letter-spacing:.06em}
+  header .brand small{display:block; font-family:'DM Sans'; font-weight:400; font-size:.68rem; letter-spacing:.12em; color:#B9C0C9}
+  header .hbtn{background:none; color:#B9C0C9; font-size:.8rem; font-weight:500}
 
   main{padding:16px; max-width:560px; margin:0 auto}
   .trust{display:flex; gap:8px; margin-bottom:14px}
   .trust span{flex:1; background:var(--card); border:1px solid var(--line); border-radius:12px;
-    padding:10px 8px; font-size:.68rem; font-weight:600; color:var(--steel); text-align:center; line-height:1.35}
+    padding:10px 8px; font-size:.68rem; font-weight:500; color:var(--steel); text-align:center; line-height:1.35}
   .trust b{display:block; font-size:1rem}
 
   .card{background:var(--card); border:1px solid var(--line); border-radius:var(--r); padding:16px; margin-bottom:14px}
   .meta{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px}
-  .tag{font-size:.72rem; font-weight:800; text-transform:uppercase; letter-spacing:.05em;
+  .tag{font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em;
     padding:4px 10px; border-radius:99px; background:var(--paper); color:var(--steel)}
-  .tag.trade{background:var(--ink); color:var(--gilet)}
+  .tag.trade{background:var(--ink); color:var(--accent)}
   .tag.ok{background:var(--ok); color:#fff}
-  .tag.warn{background:var(--gilet); color:var(--gilet-ink)}
+  .tag.warn{background:var(--accent); color:var(--accent-ink)}
   .tag.danger{background:var(--danger); color:#fff}
 
-  .btn{width:100%; min-height:52px; border-radius:12px; font-size:1rem; font-weight:800;
+  .btn{width:100%; min-height:52px; border-radius:12px; font-size:1rem; font-weight:700;
     display:flex; align-items:center; justify-content:center; gap:8px}
   .btn:active{transform:scale(.98)}
-  .btn.accent{background:var(--gilet); color:var(--gilet-ink)}
+  .btn.accent{background:var(--accent); color:var(--accent-ink)}
   .btn.dark{background:var(--ink); color:#fff}
   .btn.ok{background:var(--ok); color:#fff}
   .btn.ghost{background:var(--paper); color:var(--steel); border:1px solid var(--line)}
@@ -53,98 +53,193 @@
   .row{display:flex; gap:10px}
   .row .btn{flex:1}
 
-  label.f{display:block; font-size:.78rem; font-weight:800; text-transform:uppercase;
+  label.f{display:block; font-size:.78rem; font-weight:700; text-transform:uppercase;
     letter-spacing:.06em; color:var(--steel); margin:14px 0 6px}
   input[type=text],input[type=tel],textarea{width:100%; padding:14px; border:1px solid var(--line);
     border-radius:12px; font-family:inherit; font-size:1rem; background:#fff; color:var(--ink)}
-  textarea{min-height:90px; resize:vertical}
-  input:focus,textarea:focus{outline:3px solid var(--gilet); border-color:var(--gilet)}
+  textarea{min-height:100px; resize:vertical}
+  input:focus,textarea:focus{outline:3px solid var(--accent); border-color:var(--accent)}
   .chips{display:flex; flex-wrap:wrap; gap:8px}
-  .chip{padding:10px 14px; border-radius:99px; border:1px solid var(--line); background:#fff;
-    font-size:.9rem; font-weight:600; color:var(--steel)}
-  .chip.sel{background:var(--ink); color:var(--gilet); border-color:var(--ink)}
+  .chip{padding:11px 15px; border-radius:99px; border:1px solid var(--line); background:#fff;
+    font-size:.92rem; font-weight:500; color:var(--steel)}
+  .chip.sel{background:var(--ink); color:var(--accent); border-color:var(--ink)}
+  .chip.big{width:100%; text-align:left; padding:14px 16px; border-radius:12px; font-size:1rem}
 
-  /* Timeline de suivi */
+  /* Landing */
+  .hero{padding:34px 4px 22px; text-align:center}
+  .hero .logo{font-family:'Syne'; font-weight:800; font-size:1.9rem; letter-spacing:-.02em}
+  .hero .logo em{color:var(--accent); font-style:normal}
+  .hero p{color:var(--steel); font-size:1rem; margin:10px auto 22px; max-width:300px; line-height:1.5}
+
+  /* Wizard */
+  .steps{display:flex; gap:6px; margin:4px 0 16px}
+  .steps i{flex:1; height:4px; border-radius:99px; background:var(--line)}
+  .steps i.on{background:var(--accent)}
+  .back{background:none; color:var(--steel); font-size:.85rem; font-weight:500; padding:0 0 12px}
+  .ai-box{background:#FFF3EB; border:1px solid var(--accent); border-radius:12px; padding:13px 14px;
+    font-size:.92rem; line-height:1.5; margin:12px 0}
+  .ai-box b{color:var(--accent)}
+  .mic{flex:none; width:52px; background:var(--ink); color:#fff; border-radius:12px; font-size:1.2rem}
+  .mic.rec{background:var(--danger); animation:pulse 1s infinite}
+  @keyframes pulse{50%{opacity:.6}}
+  .gps{display:flex; align-items:center; gap:10px; background:var(--paper); border-radius:12px;
+    padding:12px 14px; font-size:.88rem; color:var(--steel); margin-top:10px}
+  .gps.ok{color:var(--ok); font-weight:700}
+  .fee-box{background:var(--ink); color:#fff; border-radius:var(--r); padding:16px; margin:14px 0; line-height:1.55; font-size:.92rem}
+  .fee-box .amt{font-family:'Syne'; font-weight:800; font-size:1.35rem; color:var(--accent)}
+  .recap p{display:flex; justify-content:space-between; gap:10px; padding:7px 0; border-top:1px solid var(--line); font-size:.9rem}
+  .recap p:first-child{border:0}
+  .recap b{text-align:right}
+
+  /* Timeline */
   .tl{margin:6px 0 14px}
-  .tl .step{display:flex; gap:12px; align-items:flex-start; padding:7px 0}
+  .tl .step{display:flex; gap:12px; align-items:flex-start; padding:6px 0}
   .tl .pt{width:14px; height:14px; border-radius:50%; border:3px solid var(--line); background:#fff; margin-top:2px; flex:none}
   .tl .step.done .pt{background:var(--ok); border-color:var(--ok)}
-  .tl .step.now .pt{background:var(--gilet); border-color:var(--gilet-ink)}
+  .tl .step.now .pt{background:var(--accent); border-color:var(--ink)}
   .tl .step span{font-size:.88rem; color:var(--steel)}
   .tl .step.done span{color:var(--ink)}
-  .tl .step.now span{color:var(--ink); font-weight:800}
+  .tl .step.now span{color:var(--ink); font-weight:700}
 
-  .quote{border:2px solid var(--gilet); border-radius:var(--r); padding:14px; margin:12px 0; background:#FFFBF0}
-  .quote .amt{font-weight:900; font-size:1.6rem}
-  .quote .amt small{font-size:.75rem; font-weight:600; color:var(--steel)}
+  .quote{border:2px solid var(--accent); border-radius:var(--r); padding:14px; margin:12px 0; background:#FFF3EB}
+  .quote .amt{font-family:'Syne'; font-weight:800; font-size:1.6rem}
+  .quote .amt small{font-family:'DM Sans'; font-size:.75rem; font-weight:500; color:var(--steel)}
   .quote p.det{font-size:.9rem; margin:8px 0 12px; line-height:1.45}
 
   .artisan{display:flex; gap:12px; align-items:center; background:var(--paper); border-radius:12px; padding:12px; margin-bottom:12px}
-  .artisan .av{width:48px; height:48px; border-radius:50%; background:var(--ink); color:var(--gilet);
-    display:flex; align-items:center; justify-content:center; font-weight:900; font-size:1.1rem; flex:none}
-  .artisan .nm{font-weight:800; font-size:.95rem}
+  .artisan .av{width:48px; height:48px; border-radius:50%; background:var(--ink); color:var(--accent);
+    display:flex; align-items:center; justify-content:center; font-family:'Syne'; font-weight:800; font-size:1.1rem; flex:none}
+  .artisan .nm{font-weight:700; font-size:.95rem}
   .artisan .st{font-size:.78rem; color:var(--steel)}
 
   .guarantee{background:var(--ink); color:#fff; border-radius:var(--r); padding:14px 16px;
     font-size:.85rem; line-height:1.5; margin-bottom:14px}
-  .guarantee b{color:var(--gilet)}
+  .guarantee b{color:var(--accent)}
 
   .stars{display:flex; gap:6px; font-size:1.9rem; margin:8px 0}
   .stars button{background:none; filter:grayscale(1); opacity:.45}
   .stars button.on{filter:none; opacity:1}
 
   .empty{text-align:center; color:var(--steel); padding:44px 24px; font-size:.95rem; line-height:1.5}
-  .empty b{display:block; font-size:1.05rem; color:var(--ink); margin-bottom:6px}
+  .empty b{display:block; font-family:'Syne'; font-size:1.05rem; color:var(--ink); margin-bottom:6px}
   .toast{position:fixed; left:16px; right:16px; bottom:20px; z-index:50; background:var(--ink); color:#fff;
-    padding:14px 16px; border-radius:12px; font-size:.9rem; font-weight:600; opacity:0; transform:translateY(8px);
+    padding:14px 16px; border-radius:12px; font-size:.9rem; font-weight:500; opacity:0; transform:translateY(8px);
     transition:.25s; pointer-events:none}
   .toast.show{opacity:1; transform:none}
   .screen{display:none}
   .screen.on{display:block}
-  .back{background:none; color:var(--steel); font-size:.85rem; font-weight:600; padding:0 0 12px}
   .paywait{text-align:center; padding:18px 8px}
   .paywait .big{font-size:2.2rem; margin-bottom:8px}
   .sub{font-size:.85rem; color:var(--steel); line-height:1.5}
   .hist p{display:flex; justify-content:space-between; gap:8px; padding:10px 0; border-top:1px solid var(--line); font-size:.88rem}
-  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+  .searching{display:inline-block; width:38px; height:38px; border:4px solid var(--line);
+    border-top-color:var(--accent); border-radius:50%; animation:spin 1s linear infinite; margin-bottom:10px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important}}
 </style>
 </head>
 <body>
 
 <header>
   <div class="brand">Dépannage<small>Douala · à domicile</small></div>
-  <button id="btnLogout" hidden>Déconnexion</button>
+  <div>
+    <button class="hbtn" id="btnHome" hidden>Mes demandes</button>
+    <button class="hbtn" id="btnLogout" hidden>Déconnexion</button>
+  </div>
 </header>
 
 <main>
-  <!-- ========== AUTH ========== -->
-  <section class="screen on" id="scr-auth">
+  <!-- ========== ÉCRAN 1 : OUVERTURE ========== -->
+  <section class="screen on" id="scr-landing">
+    <div class="hero">
+      <div class="logo">DÉPAN<em>NAGE</em></div>
+      <p>Décrivez votre problème, nous trouvons le bon professionnel.</p>
+      <button class="btn accent" id="btnStart">🛠 Demander une intervention</button>
+    </div>
     <div class="trust">
       <span><b>✔</b>Artisans vérifiés</span>
       <span><b>🧾</b>Prix cadré avant travaux</span>
       <span><b>🛡</b>Garantie 7 jours</span>
-    </div>
-    <div class="card">
-      <h2 style="margin-bottom:6px">Connexion</h2>
-      <p class="sub">Ton numéro reçoit un code par SMS. Pas de mot de passe.</p>
-      <label class="f" for="phone">Numéro de téléphone</label>
-      <input type="tel" id="phone" placeholder="6 XX XX XX XX" inputmode="numeric" autocomplete="tel">
-      <div id="otpZone" hidden>
-        <label class="f" for="otp">Code reçu par SMS</label>
-        <input type="text" id="otp" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="123456">
-      </div>
-      <div style="margin-top:16px"><button class="btn accent" id="btnAuth">Recevoir mon code</button></div>
     </div>
   </section>
 
-  <!-- ========== ACCUEIL ========== -->
-  <section class="screen" id="scr-home">
-    <div class="trust">
-      <span><b>✔</b>Artisans vérifiés</span>
-      <span><b>🧾</b>Prix cadré avant travaux</span>
-      <span><b>🛡</b>Garantie 7 jours</span>
+  <!-- ========== WIZARD (ÉCRANS 2 → 6) ========== -->
+  <section class="screen" id="scr-wizard">
+    <button class="back" id="wBack">← Retour</button>
+    <div class="steps" id="wSteps"></div>
+
+    <!-- Étape 1 : décrire -->
+    <div class="card" data-step="0">
+      <h2 style="margin-bottom:4px">Votre problème</h2>
+      <p class="sub">Quelques mots suffisent — ou dictez-le.</p>
+      <div class="row" style="margin-top:12px">
+        <textarea id="wDesc" placeholder="Ex : mon robinet de douche fuit, l’eau coule même fermé" style="flex:1"></textarea>
+        <button class="mic" id="wMic" title="Dictée vocale" hidden>🎙</button>
+      </div>
+      <label class="f" for="wPhotos">Photos (recommandé — elles aident l’artisan à prévoir le matériel)</label>
+      <input type="file" id="wPhotos" accept="image/*" multiple>
+      <button class="btn accent" id="wDescNext" style="margin-top:16px">Continuer</button>
     </div>
-    <button class="btn dark" id="btnNew" style="margin-bottom:16px">🛠 Demander un dépannage</button>
+
+    <!-- Étape 2 : métier -->
+    <div class="card" data-step="1" hidden>
+      <h2 style="margin-bottom:4px">Le bon professionnel</h2>
+      <div class="ai-box" id="wReform" hidden></div>
+      <p class="sub" id="wTradeHint">Confirmez le métier recommandé :</p>
+      <div class="chips" id="wTrades" style="margin-top:12px"></div>
+      <button class="btn accent" id="wTradeNext" style="margin-top:16px" disabled>Continuer</button>
+    </div>
+
+    <!-- Étape 3 : localisation -->
+    <div class="card" data-step="2" hidden>
+      <h2 style="margin-bottom:4px">Où êtes-vous ?</h2>
+      <label class="f">Votre quartier</label>
+      <div class="chips" id="wZones"></div>
+      <label class="f" for="wRepere">Point de repère précis</label>
+      <input type="text" id="wRepere" placeholder="Ex : rue Njo-Njo, immeuble bleu après la pharmacie, 2ᵉ étage">
+      <div class="gps" id="wGps">📍 <span>Position GPS : autorisez-la pour guider l’artisan (optionnel)</span></div>
+      <button class="btn accent" id="wLocNext" style="margin-top:16px">Continuer</button>
+    </div>
+
+    <!-- Étape 4 : urgence -->
+    <div class="card" data-step="3" hidden>
+      <h2 style="margin-bottom:10px">C’est pour quand ?</h2>
+      <div class="chips" id="wUrgency">
+        <button type="button" class="chip big" data-u="now">🚨 <b>Maintenant</b> — c’est urgent</button>
+        <button type="button" class="chip big" data-u="today">🕒 <b>Aujourd’hui</b> — dans la journée</button>
+        <button type="button" class="chip big" data-u="week">📅 <b>Cette semaine</b> — je m’organise</button>
+      </div>
+    </div>
+
+    <!-- Étape 5 : réservation (auth + forfait) -->
+    <div class="card" data-step="4" hidden>
+      <h2 style="margin-bottom:8px">Réservation</h2>
+      <div class="recap" id="wRecap"></div>
+      <div class="fee-box">
+        Déplacement &amp; diagnostic : <span class="amt" id="wFee">1 000 FCFA</span><br>
+        Ce montant paie le déplacement de l’artisan et son diagnostic sur place.
+        Les travaux font l’objet d’un devis séparé — <b style="color:var(--accent)">rien ne se fait sans votre accord</b>.
+      </div>
+      <div id="wAuth">
+        <label class="f" for="wPhone">Votre numéro de téléphone</label>
+        <input type="tel" id="wPhone" placeholder="6 XX XX XX XX" inputmode="numeric" autocomplete="tel">
+        <div id="wOtpZone" hidden>
+          <label class="f" for="wOtp">Code reçu par SMS</label>
+          <input type="text" id="wOtp" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="123456">
+        </div>
+        <div id="wNameZone" hidden>
+          <label class="f" for="wName">Votre nom complet</label>
+          <input type="text" id="wName" autocomplete="name">
+        </div>
+      </div>
+      <button class="btn accent" id="wBook" style="margin-top:16px">Recevoir mon code</button>
+      <p class="sub" style="margin-top:10px; text-align:center">Connexion en 20 secondes · aucun mot de passe</p>
+    </div>
+  </section>
+
+  <!-- ========== MES DEMANDES ========== -->
+  <section class="screen" id="scr-home">
+    <button class="btn dark" id="btnNew" style="margin-bottom:16px">🛠 Nouvelle demande</button>
     <h2 style="font-size:1.05rem; margin-bottom:10px">Mes demandes</h2>
     <div id="missionList"></div>
     <div class="card hist" id="histCard" hidden>
@@ -153,38 +248,9 @@
     </div>
   </section>
 
-  <!-- ========== NOUVELLE DEMANDE ========== -->
-  <section class="screen" id="scr-new">
-    <button class="back" data-home>← Retour</button>
-    <div class="card">
-      <h2 style="margin-bottom:4px">Ton problème</h2>
-      <label class="f">De quel métier as-tu besoin ?</label>
-      <div class="chips" id="nTrades"></div>
-      <label class="f">Ton quartier</label>
-      <div class="chips" id="nZones"></div>
-      <label class="f" for="nDesc">Décris le problème</label>
-      <textarea id="nDesc" placeholder="ex : La douche fuit au niveau de la colonne, l’eau coule même robinet fermé"></textarea>
-      <label class="f" for="nRepere">Point de repère précis</label>
-      <input type="text" id="nRepere" placeholder="ex : Rue Njo-Njo, immeuble bleu après la pharmacie, 2ᵉ étage">
-      <label class="f" for="nPhotos">Photos (recommandé)</label>
-      <input type="file" id="nPhotos" accept="image/*" multiple>
-      <label class="f">Quand ?</label>
-      <div class="chips" id="nWhen">
-        <button type="button" class="chip sel" data-w="ASAP">Dès que possible</button>
-        <button type="button" class="chip" data-w="today_pm">Aujourd’hui après-midi</button>
-        <button type="button" class="chip" data-w="tomorrow">Demain</button>
-      </div>
-      <div class="guarantee" style="margin-top:16px" id="feeBox">
-        Forfait déplacement + diagnostic : <b id="feeAmt">—</b><br>
-        Payé d’avance, il couvre le déplacement de l’artisan. Ensuite : devis dans l’app, <b>aucuns travaux sans ton accord</b>.
-      </div>
-      <button class="btn accent" id="btnCreate">Réserver et payer le forfait</button>
-    </div>
-  </section>
-
-  <!-- ========== DÉTAIL MISSION ========== -->
+  <!-- ========== DÉTAIL / SUIVI ========== -->
   <section class="screen" id="scr-detail">
-    <button class="back" data-home>← Mes demandes</button>
+    <button class="back" id="dBack">← Mes demandes</button>
     <div id="detailWrap"></div>
   </section>
 </main>
@@ -200,7 +266,11 @@ const FN = '/.netlify/functions';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 /* ================= ÉTAT ================= */
-const S = { user:null, profile:null, trades:[], zones:[], missions:[], current:null, channel:null, poll:null };
+const S = {
+  user:null, trades:[], zones:[], missions:[], current:null, channel:null, poll:null,
+  draft:{ description:'', files:[], trade:null, zone:null, repere:'', lat:null, lng:null, urgency:null },
+  step:0, otpPhone:null, needName:false,
+};
 const $ = (id) => document.getElementById(id);
 const fcfa = (n) => (n ?? 0).toLocaleString('fr-FR') + ' FCFA';
 function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show');
@@ -209,54 +279,236 @@ function show(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.r
 function normPhone(raw){ const d=String(raw).replace(/\D/g,'');
   if(/^237\d{9}$/.test(d)) return '+'+d; if(/^6\d{8}$/.test(d)) return '+237'+d; return null; }
 function escapeHtml(s){ return String(s ?? '').replace(/[&<>"']/g,(c)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-document.querySelectorAll('[data-home]').forEach(b=>b.onclick=()=>{ show('scr-home'); loadMissions(); });
-
-/* ================= AUTH ================= */
-let otpPhone = null;
-$('btnAuth').addEventListener('click', async () => {
-  const btn = $('btnAuth');
-  if (!otpPhone) {
-    const p = normPhone($('phone').value);
-    if (!p) return toast('Numéro invalide — format 6 XX XX XX XX');
-    btn.disabled = true;
-    const { error } = await sb.auth.signInWithOtp({ phone: p });
-    btn.disabled = false;
-    if (error) return toast('Envoi du code impossible. Réessaie.');
-    otpPhone = p; $('otpZone').hidden = false; $('otp').focus();
-    btn.textContent = 'Valider le code';
-  } else {
-    btn.disabled = true;
-    const { error } = await sb.auth.verifyOtp({ phone: otpPhone, token: $('otp').value.trim(), type: 'sms' });
-    btn.disabled = false;
-    if (error) return toast('Code incorrect ou expiré');
-    boot();
-  }
-});
-$('btnLogout').addEventListener('click', async () => { await sb.auth.signOut(); location.reload(); });
+const TRADE = (id) => S.trades.find(t=>t.id===id) || {};
+const TRADE_LABEL = (id) => TRADE(id).label_fr || id;
+const zoneLabel = (id) => (S.zones.find(z=>z.id===id)?.label) || id;
+const URGENCY_LABEL = { now:'Maintenant', today:'Aujourd’hui', week:'Cette semaine' };
 
 /* ================= BOOT ================= */
 async function boot() {
-  const { data:{ user } } = await sb.auth.getUser();
-  if (!user) return show('scr-auth');
-  S.user = user; $('btnLogout').hidden = false;
-
   const [{ data: trades }, { data: zones }] = await Promise.all([
     sb.from('trades').select('*').eq('is_active', true),
     sb.from('zones').select('*').eq('is_active', true),
   ]);
   S.trades = trades || []; S.zones = zones || [];
 
-  const { data: profile } = await sb.from('profiles').select('*').eq('id', user.id).maybeSingle();
-  if (!profile) {
-    const name = prompt('Bienvenue ! Ton nom complet :');
-    if (!name || name.trim().length < 3) return toast('Nom requis pour continuer');
-    await sb.from('profiles').insert({ id: user.id, role: 'client', full_name: name.trim(), phone: user.phone });
+  const { data:{ user } } = await sb.auth.getUser();
+  if (user) {
+    S.user = user;
+    $('btnLogout').hidden = false; $('btnHome').hidden = false;
+    subscribeRealtime();
+    await loadMissions();
+    // Client connu avec des demandes → accueil direct sur ses demandes
+    if (S.missions.length) return show('scr-home');
   }
-  S.profile = profile || { full_name: '' };
+  show('scr-landing');
+}
+$('btnLogout').onclick = async () => { await sb.auth.signOut(); location.reload(); };
+$('btnHome').onclick = () => { show('scr-home'); loadMissions(); };
+$('dBack').onclick = () => { clearInterval(S.poll); show('scr-home'); loadMissions(); };
+$('btnStart').onclick = startWizard;
+$('btnNew').onclick = startWizard;
 
-  subscribeRealtime();
-  await loadMissions();
-  show('scr-home');
+/* ================= WIZARD ================= */
+const STEP_COUNT = 5;
+function startWizard(){
+  S.draft = { description:'', files:[], trade:null, zone:null, repere:'', lat:null, lng:null, urgency:null };
+  S.step = 0; S.otpPhone = null;
+  $('wDesc').value=''; $('wPhotos').value=''; $('wRepere').value='';
+  $('wOtpZone').hidden = true; $('wNameZone').hidden = true;
+  renderStep(); show('scr-wizard');
+}
+function renderStep(){
+  document.querySelectorAll('[data-step]').forEach(el => el.hidden = +el.dataset.step !== S.step);
+  $('wSteps').innerHTML = Array.from({length:STEP_COUNT},(_,i)=>`<i class="${i<=S.step?'on':''}"></i>`).join('');
+  $('wBack').textContent = S.step === 0 ? '← Annuler' : '← Retour';
+}
+$('wBack').onclick = () => {
+  if (S.step === 0) return show(S.user && S.missions.length ? 'scr-home' : 'scr-landing');
+  S.step--; renderStep();
+};
+
+/* ---- Étape 1 : décrire (+ dictée) ---- */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (SR) {
+  $('wMic').hidden = false;
+  const rec = new SR(); rec.lang = 'fr-FR'; rec.interimResults = false;
+  let recording = false;
+  $('wMic').onclick = () => {
+    if (recording) { rec.stop(); return; }
+    recording = true; $('wMic').classList.add('rec'); rec.start();
+  };
+  rec.onresult = (e) => {
+    const t = e.results[0][0].transcript;
+    $('wDesc').value = ($('wDesc').value + ' ' + t).trim();
+  };
+  rec.onend = () => { recording = false; $('wMic').classList.remove('rec'); };
+  rec.onerror = () => { recording = false; $('wMic').classList.remove('rec'); toast('Dictée indisponible — écrivez votre problème'); };
+}
+
+$('wDescNext').onclick = async () => {
+  const desc = $('wDesc').value.trim();
+  if (desc.length < 10) return toast('Décrivez un peu plus votre problème (10 caractères min.)');
+  S.draft.description = desc;
+  S.draft.files = [...$('wPhotos').files].slice(0, 4);
+  S.step = 1; renderStep();
+  // Qualification IA (jamais bloquante)
+  $('wReform').hidden = true;
+  $('wTradeHint').textContent = 'Analyse de votre demande…';
+  renderTradeChips(S.trades.map(t=>t.id), null);
+  try {
+    const res = await fetch(`${FN}/suggest-trade`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ description: desc }),
+    });
+    const out = await res.json();
+    if (out.reformulation) {
+      $('wReform').innerHTML = `<b>Notre compréhension :</b> ${escapeHtml(out.reformulation)}`;
+      $('wReform').hidden = false;
+    }
+    if (out.trades?.length) {
+      $('wTradeHint').textContent = out.trades.length > 1
+        ? 'Plusieurs métiers peuvent convenir — confirmez :' : 'Confirmez le métier recommandé :';
+      renderTradeChips(out.trades.concat(S.trades.map(t=>t.id).filter(id=>!out.trades.includes(id))), out.trades[0]);
+    } else {
+      $('wTradeHint').textContent = 'Choisissez le métier :';
+    }
+  } catch { $('wTradeHint').textContent = 'Choisissez le métier :'; }
+};
+function renderTradeChips(orderedIds, preselect){
+  $('wTrades').innerHTML = orderedIds.map(id =>
+    `<button type="button" class="chip ${id===preselect?'sel':''}" data-id="${id}">${TRADE_LABEL(id)}${id===preselect?' · recommandé':''}</button>`).join('');
+  S.draft.trade = preselect || null;
+  $('wTradeNext').disabled = !S.draft.trade;
+}
+$('wTrades').onclick = (e) => {
+  const b = e.target.closest('.chip'); if (!b) return;
+  S.draft.trade = b.dataset.id;
+  $('wTrades').querySelectorAll('.chip').forEach(x=>x.classList.toggle('sel', x===b));
+  $('wTradeNext').disabled = false;
+};
+$('wTradeNext').onclick = () => {
+  S.step = 2; renderStep();
+  $('wZones').innerHTML = S.zones.map(z=>`<button type="button" class="chip ${S.draft.zone===z.id?'sel':''}" data-id="${z.id}">${z.label}</button>`).join('');
+  askGps();
+};
+
+/* ---- Étape 3 : localisation ---- */
+function askGps(){
+  if (!navigator.geolocation || S.draft.lat) return;
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      S.draft.lat = pos.coords.latitude; S.draft.lng = pos.coords.longitude;
+      $('wGps').classList.add('ok');
+      $('wGps').innerHTML = '📍 <span>Position enregistrée — l’artisan sera guidé jusqu’à vous</span>';
+    },
+    () => {}, { enableHighAccuracy: true, timeout: 8000 }
+  );
+}
+$('wZones').onclick = (e) => {
+  const b = e.target.closest('.chip'); if (!b) return;
+  S.draft.zone = b.dataset.id;
+  $('wZones').querySelectorAll('.chip').forEach(x=>x.classList.toggle('sel', x===b));
+};
+$('wLocNext').onclick = () => {
+  if (!S.draft.zone) return toast('Choisissez votre quartier');
+  const rep = $('wRepere').value.trim();
+  if (rep.length < 5) return toast('Le point de repère aide l’artisan à vous trouver');
+  S.draft.repere = rep;
+  S.step = 3; renderStep();
+};
+
+/* ---- Étape 4 : urgence ---- */
+$('wUrgency').onclick = (e) => {
+  const b = e.target.closest('.chip'); if (!b) return;
+  S.draft.urgency = b.dataset.u;
+  S.step = 4; renderStep(); renderRecap();
+};
+
+/* ---- Étape 5 : récap + auth + paiement ---- */
+function renderRecap(){
+  const d = S.draft, t = TRADE(d.trade);
+  $('wFee').textContent = fcfa(t.diagnostic_fee_fcfa);
+  $('wRecap').innerHTML = `
+    <p><span>Métier</span><b>${TRADE_LABEL(d.trade)}</b></p>
+    <p><span>Quartier</span><b>${zoneLabel(d.zone)}</b></p>
+    <p><span>Quand</span><b>${URGENCY_LABEL[d.urgency]}</b></p>
+    <p><span>Photos</span><b>${d.files.length || 'aucune'}</b></p>`;
+  if (S.user) {
+    $('wAuth').hidden = true;
+    $('wBook').textContent = `Réserver · payer ${fcfa(t.diagnostic_fee_fcfa)}`;
+  } else {
+    $('wAuth').hidden = false;
+    $('wBook').textContent = S.otpPhone ? 'Valider le code' : 'Recevoir mon code';
+  }
+}
+
+$('wBook').onclick = async () => {
+  const btn = $('wBook');
+  // --- Cas 1 : pas connecté, pas d'OTP envoyé → envoi du code
+  if (!S.user && !S.otpPhone) {
+    const p = normPhone($('wPhone').value);
+    if (!p) return toast('Numéro invalide — format 6 XX XX XX XX');
+    btn.disabled = true;
+    const { error } = await sb.auth.signInWithOtp({ phone: p });
+    btn.disabled = false;
+    if (error) return toast('Envoi du code impossible. Réessayez.');
+    S.otpPhone = p; $('wOtpZone').hidden = false; $('wOtp').focus();
+    btn.textContent = 'Valider le code';
+    return;
+  }
+  // --- Cas 2 : OTP envoyé → vérification (+ nom si nouveau)
+  if (!S.user && S.otpPhone) {
+    btn.disabled = true;
+    const { error } = await sb.auth.verifyOtp({ phone: S.otpPhone, token: $('wOtp').value.trim(), type: 'sms' });
+    if (error) { btn.disabled = false; return toast('Code incorrect ou expiré'); }
+    const { data:{ user } } = await sb.auth.getUser();
+    S.user = user; $('btnLogout').hidden = false; $('btnHome').hidden = false;
+    subscribeRealtime();
+    const { data: profile } = await sb.from('profiles').select('id').eq('id', user.id).maybeSingle();
+    if (!profile) {
+      const name = $('wName').value.trim();
+      if (name.length < 3) {
+        btn.disabled = false; $('wNameZone').hidden = false; $('wName').focus();
+        btn.textContent = 'Confirmer mon nom et réserver';
+        return toast('Dernière étape : votre nom complet');
+      }
+      await sb.from('profiles').insert({ id: user.id, role: 'client', full_name: name, phone: user.phone });
+    }
+    btn.disabled = false;
+    renderRecap();
+    return bookAndPay();
+  }
+  // --- Cas 3 : connecté → réservation directe
+  bookAndPay();
+};
+
+async function bookAndPay(){
+  const btn = $('wBook'); btn.disabled = true; btn.textContent = 'Création…';
+  const d = S.draft;
+  try {
+    // 1. Photos (après auth — dossier {uid}/)
+    const paths = [];
+    for (const f of d.files) {
+      const path = `${S.user.id}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.jpg`;
+      const { error } = await sb.storage.from('mission-photos').upload(path, f);
+      if (!error) paths.push(path);
+    }
+    // 2. Mission (forfait imposé par le trigger — patch 03)
+    const { data: mission, error } = await sb.from('missions').insert({
+      client_id: S.user.id, trade_id: d.trade, zone_id: d.zone,
+      repere: d.repere, description: d.description, photos: paths,
+      urgency: d.urgency === 'now',
+      preferred_slot: URGENCY_LABEL[d.urgency],
+      lat: d.lat, lng: d.lng,
+      diagnostic_fee_fcfa: 0,
+    }).select().single();
+    if (error) throw error;
+    await loadMissions();
+    openDetail(mission.id);   // le détail affiche « Payer le forfait »
+  } catch (e) {
+    console.error(e); toast('Création impossible. Vérifiez votre connexion.');
+  } finally { btn.disabled = false; renderRecap(); }
 }
 
 /* ================= LISTE ================= */
@@ -264,17 +516,16 @@ const ACTIVE = ['pending_payment','dispatching','dispatch_failed','assigned','en
 const DONE = ['paid','closed','quote_refused','cancelled_client','cancelled_artisan'];
 const STATUS_FR = {
   pending_payment:'Forfait à payer', dispatching:'Recherche d’un artisan…',
-  dispatch_failed:'On te rappelle très vite', assigned:'Artisan trouvé ✔',
+  dispatch_failed:'On vous rappelle très vite', assigned:'Artisan trouvé ✔',
   en_route:'Artisan en route', arrived:'Artisan sur place',
-  quote_pending:'Devis reçu — à toi de décider', in_progress:'Travaux en cours',
+  quote_pending:'Devis reçu — à vous de décider', in_progress:'Travaux en cours',
   done_artisan:'À confirmer : travaux terminés ?', confirmed:'Solde à payer',
   paid:'Payée', closed:'Terminée', quote_refused:'Devis refusé',
   cancelled_client:'Annulée', cancelled_artisan:'Annulée par l’artisan',
 };
-const TRADE_LABEL = (id) => (S.trades.find(t=>t.id===id)?.label_fr) || id;
-const zoneLabel = (id) => (S.zones.find(z=>z.id===id)?.label) || id;
 
 async function loadMissions() {
+  if (!S.user) return;
   const { data } = await sb.from('missions').select('*')
     .eq('client_id', S.user.id).order('created_at', { ascending:false });
   S.missions = data || [];
@@ -289,7 +540,7 @@ async function loadMissions() {
     c.innerHTML = `
       <div class="meta"><span class="tag trade">${TRADE_LABEL(m.trade_id)}</span>
         <span class="tag">${zoneLabel(m.zone_id)}</span>
-        <span class="tag ${m.status==='quote_pending'||m.status==='confirmed'||m.status==='done_artisan'?'warn':''}">${STATUS_FR[m.status]}</span></div>
+        <span class="tag ${['quote_pending','confirmed','done_artisan','pending_payment'].includes(m.status)?'warn':''}">${STATUS_FR[m.status]}</span></div>
       <p style="font-size:.9rem;color:var(--steel)">${escapeHtml(m.description.slice(0,90))}${m.description.length>90?'…':''}</p>
       <button class="btn ghost" style="margin-top:10px;min-height:44px">Ouvrir le suivi</button>`;
     c.querySelector('.btn').onclick = () => openDetail(m.id);
@@ -302,73 +553,18 @@ async function loadMissions() {
        <span style="color:var(--steel)">${STATUS_FR[m.status]}</span></p>`).join('');
 }
 
-/* ================= NOUVELLE DEMANDE ================= */
-const nSel = { trade:null, zone:null, when:'ASAP' };
-$('btnNew').onclick = () => {
-  $('nTrades').innerHTML = S.trades.map(t=>`<button type="button" class="chip" data-id="${t.id}">${t.label_fr}</button>`).join('');
-  $('nZones').innerHTML = S.zones.map(z=>`<button type="button" class="chip" data-id="${z.id}">${z.label}</button>`).join('');
-  show('scr-new');
-};
-$('nTrades').addEventListener('click', (e)=>{
-  const b = e.target.closest('.chip'); if(!b) return;
-  nSel.trade = b.dataset.id;
-  $('nTrades').querySelectorAll('.chip').forEach(x=>x.classList.toggle('sel', x===b));
-  const t = S.trades.find(x=>x.id===nSel.trade);
-  $('feeAmt').textContent = fcfa(t.diagnostic_fee_fcfa);
-});
-$('nZones').addEventListener('click', (e)=>{
-  const b = e.target.closest('.chip'); if(!b) return;
-  nSel.zone = b.dataset.id;
-  $('nZones').querySelectorAll('.chip').forEach(x=>x.classList.toggle('sel', x===b));
-});
-$('nWhen').addEventListener('click', (e)=>{
-  const b = e.target.closest('.chip'); if(!b) return;
-  nSel.when = b.dataset.w;
-  $('nWhen').querySelectorAll('.chip').forEach(x=>x.classList.toggle('sel', x===b));
-});
-
-$('btnCreate').addEventListener('click', async () => {
-  const desc = $('nDesc').value.trim(), repere = $('nRepere').value.trim();
-  if (!nSel.trade) return toast('Choisis le métier');
-  if (!nSel.zone) return toast('Choisis ton quartier');
-  if (desc.length < 10) return toast('Décris le problème (10 caractères min.)');
-  if (repere.length < 5) return toast('Le point de repère aide l’artisan à te trouver');
-  const btn = $('btnCreate'); btn.disabled = true; btn.textContent = 'Création…';
-  try {
-    // 1. Photos
-    const files = [...$('nPhotos').files].slice(0, 4);
-    const paths = [];
-    for (const f of files) {
-      const path = `${S.user.id}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.jpg`;
-      const { error } = await sb.storage.from('mission-photos').upload(path, f);
-      if (!error) paths.push(path);
-    }
-    // 2. Mission (le forfait est imposé par le serveur — trigger patch 03)
-    const { data: mission, error } = await sb.from('missions').insert({
-      client_id: S.user.id, trade_id: nSel.trade, zone_id: nSel.zone,
-      repere, description: desc, photos: paths,
-      urgency: nSel.when === 'ASAP',
-      preferred_slot: { ASAP:'Dès que possible', today_pm:'Aujourd’hui après-midi', tomorrow:'Demain' }[nSel.when],
-      diagnostic_fee_fcfa: 0, // écrasé par le trigger
-    }).select().single();
-    if (error) throw error;
-    ['nDesc','nRepere'].forEach(id=>$(id).value=''); $('nPhotos').value='';
-    openDetail(mission.id);
-  } catch (e) {
-    console.error(e); toast('Création impossible. Vérifie ta connexion.');
-  } finally { btn.disabled = false; btn.textContent = 'Réserver et payer le forfait'; }
-});
-
 /* ================= DÉTAIL & SUIVI ================= */
+/* Timeline avec le devis comme jalon explicite (parcours V1 corrigé) */
+const ORDER = ['pending_payment','dispatching','assigned','en_route','arrived','quote_pending','in_progress','done_artisan','confirmed','paid','closed'];
 const TL_STEPS = [
   ['pending_payment','Forfait payé'],
   ['dispatching','Artisan trouvé'],
   ['en_route','Artisan sur place'],
+  ['arrived','Devis reçu'],
   ['quote_pending','Devis accepté'],
   ['in_progress','Travaux terminés'],
   ['confirmed','Solde payé'],
 ];
-const ORDER = ['pending_payment','dispatching','assigned','en_route','arrived','quote_pending','in_progress','done_artisan','confirmed','paid','closed'];
 
 async function openDetail(id) {
   const { data: m } = await sb.from('missions').select('*').eq('id', id).single();
@@ -383,7 +579,7 @@ async function renderDetail(m) {
   const pos = ORDER.indexOf(m.status);
   const tl = TL_STEPS.map(([st, label]) => {
     const stepPos = ORDER.indexOf(st);
-    const cls = pos > stepPos ? 'done' : (pos === stepPos || (st==='pending_payment'&&pos===0) ? 'now' : '');
+    const cls = pos > stepPos ? 'done' : (pos === stepPos ? 'now' : '');
     return `<div class="step ${cls}"><div class="pt"></div><span>${label}</span></div>`;
   }).join('');
 
@@ -418,11 +614,11 @@ async function renderDetail(m) {
 
 async function renderClientActions(zone, m) {
   const pay = async (kind) => {
-    const phone = normPhone(prompt('Numéro Mobile Money qui paie :', S.user.phone.replace('+','')) || '');
+    const phone = normPhone(prompt('Numéro Mobile Money qui paie :', (S.user.phone||'').replace('+','')) || '');
     if (!phone) return toast('Numéro invalide');
     zone.innerHTML = `<div class="paywait"><div class="big">📲</div>
-      <p style="font-weight:800">Valide le paiement sur ton téléphone</p>
-      <p class="sub">Un message Orange Money / MTN MoMo arrive sur le ${phone}. Compose ton code secret pour confirmer. Cette page se met à jour toute seule.</p></div>`;
+      <p style="font-weight:700">Validez le paiement sur votre téléphone</p>
+      <p class="sub">Un message Orange Money / MTN MoMo arrive sur le ${phone}. Composez votre code secret pour confirmer. Cette page se met à jour toute seule.</p></div>`;
     const { data:{ session } } = await sb.auth.getSession();
     const res = await fetch(`${FN}/create-mission-payment`, {
       method:'POST',
@@ -432,7 +628,7 @@ async function renderClientActions(zone, m) {
     const out = await res.json().catch(()=>({}));
     if (!res.ok) { toast(out.error || 'Paiement impossible'); renderDetail(m); return; }
     if (out.ussd_code) zone.querySelector('.sub').insertAdjacentHTML('beforeend',
-      `<br><br>Rien reçu ? Compose : <b>${escapeHtml(out.ussd_code)}</b>`);
+      `<br><br>Rien reçu ? Composez : <b>${escapeHtml(out.ussd_code)}</b>`);
     startPolling(m.id);
   };
 
@@ -443,15 +639,15 @@ async function renderClientActions(zone, m) {
     zone.children[1].onclick = () => act(m, 'cancel_client');
   }
   else if (m.status === 'dispatching') {
-    zone.innerHTML = `<div class="paywait"><div class="big">📡</div>
-      <p style="font-weight:800">Recherche de l’artisan le plus proche…</p>
-      <p class="sub">Les meilleurs artisans de ${zoneLabel(m.zone_id)} reçoivent ta demande. Réponse en général sous 10 minutes.</p></div>`;
+    zone.innerHTML = `<div class="paywait"><div class="searching"></div>
+      <p style="font-weight:700">Nous recherchons le meilleur professionnel disponible…</p>
+      <p class="sub">Les artisans vérifiés de ${zoneLabel(m.zone_id)} reçoivent votre demande. Réponse en général sous 10 minutes.</p></div>`;
     startPolling(m.id);
   }
   else if (m.status === 'dispatch_failed') {
     zone.innerHTML = `<div class="paywait"><div class="big">☎️</div>
-      <p style="font-weight:800">On prend le relais</p>
-      <p class="sub">Aucun artisan n’a répondu à temps — notre équipe t’appelle très vite pour t’en trouver un. Ton forfait est protégé : servi ou remboursé.</p></div>`;
+      <p style="font-weight:700">On prend le relais</p>
+      <p class="sub">Aucun artisan n’a répondu à temps — notre équipe vous appelle très vite. Votre forfait est protégé : servi ou remboursé.</p></div>`;
   }
   else if (m.status === 'quote_pending') {
     const { data: q } = await sb.from('quotes').select('*')
@@ -475,47 +671,66 @@ async function renderClientActions(zone, m) {
   }
   else if (m.status === 'done_artisan') {
     zone.innerHTML = `<button class="btn ok">✅ Je confirme : travaux terminés</button>
-      <p class="sub" style="margin-top:8px">Un problème avec la prestation ? Écris-nous avant de confirmer — sans réaction sous 24 h, la mission est confirmée automatiquement.</p>`;
+      <p class="sub" style="margin-top:8px">Un problème avec la prestation ? Écrivez-nous avant de confirmer — sans réaction sous 24 h, la mission est confirmée automatiquement.</p>`;
     zone.querySelector('.btn').onclick = () => act(m, 'confirm_done');
   }
   else if (m.status === 'confirmed') {
     zone.innerHTML = `<button class="btn accent">Payer le solde · ${fcfa(m.final_amount_fcfa)}</button>
-      <p class="sub" style="margin-top:8px">Montant du devis que tu as accepté. Ta facture arrive juste après le paiement.</p>`;
+      <p class="sub" style="margin-top:8px">Montant du devis que vous avez accepté. Votre facture arrive juste après le paiement.</p>`;
     zone.querySelector('.btn').onclick = () => pay('balance');
   }
   else if (m.status === 'paid' || m.status === 'closed') {
     const { data: rev } = await sb.from('reviews').select('id').eq('mission_id', m.id).maybeSingle();
-    if (rev) { zone.innerHTML = `<p class="sub">Merci pour ton évaluation ⭐ — mission terminée.</p>`; return; }
+    if (rev) {
+      zone.innerHTML = `<button class="btn dark">📄 Télécharger ma facture</button>
+        <p class="sub" style="margin-top:8px">Merci pour votre évaluation ⭐ — mission terminée.</p>`;
+      zone.querySelector('.btn').onclick = () => openInvoice(m.id);
+      return;
+    }
     let stars = 0;
     zone.innerHTML = `
-      <p style="font-weight:800; font-size:.95rem">Comment ça s’est passé ?</p>
+      <button class="btn dark" style="margin-bottom:14px">📄 Télécharger ma facture</button>
+      <p style="font-weight:700; font-size:.95rem">Comment ça s’est passé ?</p>
       <div class="stars">${[1,2,3,4,5].map(i=>`<button data-s="${i}">⭐</button>`).join('')}</div>
       <textarea id="revComment" placeholder="Un mot sur l’intervention (optionnel)"></textarea>
-      <button class="btn dark" style="margin-top:10px">Envoyer mon avis</button>`;
+      <button class="btn accent" style="margin-top:10px">Envoyer mon avis</button>`;
+    zone.querySelectorAll('.btn')[0].onclick = () => openInvoice(m.id);
     zone.querySelector('.stars').onclick = (e) => {
       const b = e.target.closest('button'); if(!b) return;
       stars = +b.dataset.s;
       zone.querySelectorAll('.stars button').forEach((x,i)=>x.classList.toggle('on', i < stars));
     };
-    zone.querySelector('.btn').onclick = async () => {
-      if (!stars) return toast('Choisis une note de 1 à 5 étoiles');
+    zone.querySelectorAll('.btn')[1].onclick = async () => {
+      if (!stars) return toast('Choisissez une note de 1 à 5 étoiles');
       const { error } = await sb.from('reviews').insert({
         mission_id: m.id, client_id: S.user.id, artisan_id: m.assigned_artisan,
         rating: stars, comment: $('revComment').value.trim() || null,
       });
-      if (error) return toast('Envoi impossible — réessaie');
-      toast('Merci ! Ton avis aide les prochains clients.');
+      if (error) return toast('Envoi impossible — réessayez');
+      toast('Merci ! Votre avis aide les prochains clients.');
       renderDetail(m);
     };
   }
   else if (['assigned','en_route','arrived','in_progress'].includes(m.status)) {
     zone.innerHTML = `<p class="sub">${{
-      assigned:'Ton artisan prépare son départ.',
+      assigned:'Votre artisan prépare son départ.',
       en_route:'Il est en route — le bouton 📞 permet de le joindre.',
       arrived:'Il examine le problème et prépare son devis.',
       in_progress:`Travaux en cours — montant convenu : ${fcfa(m.final_amount_fcfa)}.`,
     }[m.status]}</p>`;
   }
+}
+
+async function openInvoice(missionId){
+  const { data:{ session } } = await sb.auth.getSession();
+  try {
+    const res = await fetch(`${FN}/generate-invoice?mission_id=${missionId}`, {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+    if (!res.ok) { const o = await res.json().catch(()=>({})); return toast(o.error || 'Facture indisponible'); }
+    const blob = await res.blob();
+    window.open(URL.createObjectURL(blob), '_blank');
+  } catch { toast('Téléchargement impossible — réessayez'); }
 }
 
 async function act(m, action, extra = {}) {

@@ -3,24 +3,24 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#141B23">
+<meta name="theme-color" content="#0F0F0F">
 <title>Espace Artisan</title>
 <!-- TODO PWA : manifest.json + service worker (installation écran d'accueil + push). -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
 <style>
   :root{
-    --paper:#F6F4EF; --card:#FFFFFF; --ink:#141B23; --steel:#5A6472;
-    --gilet:#FFB100; --gilet-ink:#3A2C00; --ok:#1F9D55; --danger:#D64545;
+    --paper:#FAF9F7; --card:#FFFFFF; --ink:#0F0F0F; --steel:#5A6472;
+    --gilet:#F5620A; --gilet-ink:#FFFFFF; --ok:#1F9D55; --danger:#D64545;
     --line:#E4E0D6; --r:14px;
   }
   *{box-sizing:border-box; margin:0; -webkit-tap-highlight-color:transparent}
   html{font-size:16px}
   body{
-    font-family:'Archivo',system-ui,sans-serif; background:var(--paper); color:var(--ink);
+    font-family:'DM Sans',system-ui,sans-serif; background:var(--paper); color:var(--ink);
     min-height:100dvh; padding-bottom:76px;
   }
-  h1,h2,h3{font-weight:900; letter-spacing:-.01em}
+  h1,h2,h3{font-family:'Syne',sans-serif; font-weight:800; letter-spacing:-.01em}
   button{font-family:inherit; border:0; cursor:pointer}
 
   /* ---------- Header ---------- */
@@ -29,7 +29,7 @@
     display:flex; align-items:center; justify-content:space-between;
     padding:14px 16px; padding-top:calc(14px + env(safe-area-inset-top));
   }
-  header .brand{font-weight:900; font-size:1.05rem; text-transform:uppercase; letter-spacing:.06em}
+  header .brand{font-family:'Syne',sans-serif; font-weight:800; font-size:1.05rem; text-transform:uppercase; letter-spacing:.06em}
   header .brand small{display:block; font-weight:400; font-size:.68rem; letter-spacing:.12em; color:#B9C0C9}
   .dispo{display:flex; align-items:center; gap:8px; font-size:.8rem; font-weight:600}
   .switch{position:relative; width:52px; height:30px; background:#39424E; border-radius:99px; transition:background .2s}
@@ -53,7 +53,7 @@
   /* ---------- Signature : jauge hachurée "chantier" ---------- */
   .window{margin:12px 0}
   .window .label{display:flex; justify-content:space-between; font-size:.75rem; font-weight:600; color:var(--steel); margin-bottom:6px}
-  .window .label .left{color:var(--gilet-ink); font-weight:800}
+  .window .label .left{color:var(--ink); font-weight:800}
   .gauge{height:14px; border-radius:99px; background:var(--paper); border:1px solid var(--line); overflow:hidden}
   .gauge .fill{
     height:100%; border-radius:99px; transition:width 1s linear;
@@ -230,8 +230,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 /* ================= CONFIG ================= */
-const SUPABASE_URL = 'https://krqzvlcqorqiqwxkkvqw.supabase.co';   // ← à remplir
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtycXp2bGNxb3JxaXF3eGtrdnF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ2NzAyMDQsImV4cCI6MjEwMDI0NjIwNH0.-89kluSbySWqZggmr_dXpHeP70lyrFxof40P-6Kfgrs';                // ← à remplir
+const SUPABASE_URL = 'https://VOTRE-PROJET.supabase.co';   // ← à remplir
+const SUPABASE_ANON_KEY = 'VOTRE_ANON_KEY';                // ← à remplir
 const FN = '/.netlify/functions';
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);

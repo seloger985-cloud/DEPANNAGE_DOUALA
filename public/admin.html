@@ -5,15 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title>Admin — Dépannage</title>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
 <style>
-  :root{--paper:#F6F4EF;--card:#fff;--ink:#141B23;--steel:#5A6472;--gilet:#FFB100;
-    --gilet-ink:#3A2C00;--ok:#1F9D55;--danger:#D64545;--line:#E4E0D6;--r:12px}
+  :root{--paper:#FAF9F7;--card:#fff;--ink:#0F0F0F;--steel:#5A6472;--gilet:#F5620A;
+    --gilet-ink:#FFFFFF;--ok:#1F9D55;--danger:#D64545;--line:#E4E0D6;--r:12px}
   *{box-sizing:border-box;margin:0}
-  body{font-family:'Archivo',system-ui,sans-serif;background:var(--paper);color:var(--ink);min-height:100vh}
+  body{font-family:'DM Sans',system-ui,sans-serif;background:var(--paper);color:var(--ink);min-height:100vh}
   button{font-family:inherit;border:0;cursor:pointer}
   header{background:var(--ink);color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:center}
-  header b{color:var(--gilet);text-transform:uppercase;letter-spacing:.06em}
+  header b{font-family:'Syne',sans-serif; color:var(--gilet);text-transform:uppercase;letter-spacing:.06em}
   nav{display:flex;gap:6px;padding:12px 20px;flex-wrap:wrap}
   nav button{padding:9px 16px;border-radius:99px;background:#fff;border:1px solid var(--line);
     font-weight:600;font-size:.85rem;color:var(--steel)}
@@ -70,8 +70,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const SUPABASE_URL = 'https://krqzvlcqorqiqwxkkvqw.supabase.co';   // 
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtycXp2bGNxb3JxaXF3eGtrdnF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ2NzAyMDQsImV4cCI6MjEwMDI0NjIwNH0.-89kluSbySWqZggmr_dXpHeP70lyrFxof40P-6Kfgrs';                // ← à remplir
+const SUPABASE_URL = 'https://VOTRE-PROJET.supabase.co';   // ← à remplir
+const SUPABASE_ANON_KEY = 'VOTRE_ANON_KEY';                // ← à remplir
 const FN = '/.netlify/functions';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const $ = (id) => document.getElementById(id);

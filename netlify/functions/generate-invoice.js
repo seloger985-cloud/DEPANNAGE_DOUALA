@@ -54,7 +54,7 @@ exports.handler = async (event) => {
   const text = (str, x, opts = {}) => {
     pdf.setFont('helvetica', opts.bold ? 'bold' : 'normal');
     pdf.setFontSize(opts.size || 10);
-    pdf.setTextColor(...(opts.color || [20, 27, 35]));
+    pdf.setTextColor(...(opts.color || [15, 15, 15]));
     const lines = pdf.splitTextToSize(String(str), opts.width || CONTENT);
     pdf.text(lines, x, y, { align: opts.align || 'left' });
     y += lines.length * (opts.lh || (opts.size || 10) * 0.45) + (opts.gap ?? 2);
@@ -62,9 +62,9 @@ exports.handler = async (event) => {
   const hr = () => { pdf.setDrawColor(228, 224, 214); pdf.line(MARGIN, y, W - MARGIN, y); y += 6; };
 
   // En-tête
-  pdf.setFillColor(20, 27, 35);
+  pdf.setFillColor(15, 15, 15);
   pdf.rect(0, 0, W, 34, 'F');
-  pdf.setTextColor(255, 177, 0);
+  pdf.setTextColor(245, 98, 10);
   pdf.setFont('helvetica', 'bold'); pdf.setFontSize(16);
   pdf.text(BRAND.name, MARGIN, 15);
   pdf.setTextColor(185, 192, 201); pdf.setFontSize(8); pdf.setFont('helvetica', 'normal');
@@ -93,7 +93,7 @@ exports.handler = async (event) => {
   const line = (label, amount, bold = false) => {
     pdf.setFont('helvetica', bold ? 'bold' : 'normal');
     pdf.setFontSize(bold ? 11 : 10);
-    pdf.setTextColor(20, 27, 35);
+    pdf.setTextColor(15, 15, 15);
     pdf.text(label, MARGIN, y);
     pdf.text(fcfa(amount), W - MARGIN, y, { align: 'right' });
     y += bold ? 8 : 7;
@@ -101,15 +101,15 @@ exports.handler = async (event) => {
   line('Forfait déplacement & diagnostic', m.diagnostic_fee_fcfa);
   if (quote) line('Prestation (devis accepté dans l’application)', quote.amount_fcfa);
   y += 2; hr();
-  pdf.setFillColor(255, 251, 240);
+  pdf.setFillColor(255, 243, 235);
   pdf.rect(MARGIN, y - 4, CONTENT, 12, 'F');
   line('TOTAL PAYÉ (Mobile Money)', totalPaid, true);
   y += 6;
 
   // Garantie + mentions
-  pdf.setFillColor(20, 27, 35);
+  pdf.setFillColor(15, 15, 15);
   pdf.roundedRect(MARGIN, y, CONTENT, 16, 2, 2, 'F');
-  pdf.setTextColor(255, 177, 0); pdf.setFont('helvetica', 'bold'); pdf.setFontSize(9);
+  pdf.setTextColor(245, 98, 10); pdf.setFont('helvetica', 'bold'); pdf.setFontSize(9);
   pdf.text('GARANTIE 7 JOURS', MARGIN + 5, y + 6);
   pdf.setTextColor(255, 255, 255); pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8);
   pdf.text('Si le problème réparé réapparaît sous 7 jours calendaires, l’artisan revient sans frais. Contactez notre support.', MARGIN + 5, y + 11, { maxWidth: CONTENT - 10 });
