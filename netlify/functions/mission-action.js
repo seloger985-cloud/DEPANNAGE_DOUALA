@@ -24,6 +24,21 @@ exports.handler = async (event) => {
   const isClient = m.client_id === user.id;
   const now = new Date().toISOString();
 
+
+  // 🟢 Libération auto : repasse l'artisan en Disponible s'il n'a plus de mission active
+  const releaseArtisan = async (artisanId) => {
+    if (!artisanId) return;
+    const { data: active } = await admin.from('missions').select('id')
+      .eq('assigned_artisan', artisanId)
+      .in('status', ['assigned','en_route','arrived','quote_pending','in_progress'])
+      .limit(1);
+    if (!active?.length) {
+      await admin.from('artisan_details')
+        .update({ availability: 'available' })
+        .eq('profile_id', artisanId).eq('availability', 'busy');
+    }
+  };
+
   const setStatus = async (from, to, note) => {
     const fromList = Array.isArray(from) ? from : [from];
     if (!fromList.includes(m.status))
@@ -75,11 +90,13 @@ exports.handler = async (event) => {
       case 'done': {
         if (!isArtisan) throw { code: 403, msg: 'Réservé à l’artisan attribué' };
         await setStatus('in_progress', 'done_artisan', 'Travaux déclarés terminés');
+        await releaseArtisan(m.assigned_artisan);
         break;
       }
       case 'cancel_artisan': {
         if (!isArtisan) throw { code: 403, msg: 'Réservé à l’artisan attribué' };
         await setStatus(['assigned', 'en_route', 'arrived'], 'cancelled_artisan', 'Annulée par l’artisan');
+        await releaseArtisan(m.assigned_artisan);
         // Pénalité de score : le cancel_rate de la vue artisan_stats la capte automatiquement.
         break;
       }
@@ -114,6 +131,7 @@ exports.handler = async (event) => {
           .update({ status: 'refused', decided_at: now })
           .eq('id', body.quote_id).eq('mission_id', m.id).eq('status', 'proposed');
         await setStatus('quote_pending', 'quote_refused', 'Devis refusé — forfait diagnostic acquis');
+        await releaseArtisan(m.assigned_artisan);
         break;
       }
       case 'confirm_done': {
@@ -125,6 +143,7 @@ exports.handler = async (event) => {
         if (!isClient) throw { code: 403, msg: 'Réservé au client' };
         // Politique v1 : remboursement/retenue du forfait géré manuellement (cf. CGU art. 7)
         await setStatus(['pending_payment', 'dispatching', 'assigned'], 'cancelled_client', 'Annulée par le client');
+        await releaseArtisan(m.assigned_artisan);
         break;
       }
       default:

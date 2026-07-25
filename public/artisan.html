@@ -4,210 +4,296 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0F0F0F">
-<title>Espace Artisan</title>
-<!-- TODO PWA : manifest.json + service worker (installation écran d'accueil + push). -->
+<title>Espace Artisan — Dépannage Douala</title>
+<!-- TODO PWA : manifest.json + service worker. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
 <style>
   :root{
     --paper:#FAF9F7; --card:#FFFFFF; --ink:#0F0F0F; --steel:#5A6472;
-    --gilet:#F5620A; --gilet-ink:#FFFFFF; --ok:#1F9D55; --danger:#D64545;
-    --line:#E4E0D6; --r:14px;
+    --accent:#F5620A; --accent-ink:#FFFFFF; --ok:#1F9D55; --busy:#E8930C; --danger:#D64545;
+    --line:#E7E3DC; --r:14px;
   }
   *{box-sizing:border-box; margin:0; -webkit-tap-highlight-color:transparent}
-  html{font-size:16px}
-  body{
-    font-family:'DM Sans',system-ui,sans-serif; background:var(--paper); color:var(--ink);
-    min-height:100dvh; padding-bottom:76px;
-  }
+  body{font-family:'DM Sans',system-ui,sans-serif; background:var(--paper); color:var(--ink);
+    min-height:100dvh; padding-bottom:76px}
   h1,h2,h3{font-family:'Syne',sans-serif; font-weight:800; letter-spacing:-.01em}
   button{font-family:inherit; border:0; cursor:pointer}
 
-  /* ---------- Header ---------- */
-  header{
-    position:sticky; top:0; z-index:20; background:var(--ink); color:#fff;
+  header{position:sticky; top:0; z-index:20; background:var(--ink); color:#fff;
     display:flex; align-items:center; justify-content:space-between;
-    padding:14px 16px; padding-top:calc(14px + env(safe-area-inset-top));
-  }
-  header .brand{font-family:'Syne',sans-serif; font-weight:800; font-size:1.05rem; text-transform:uppercase; letter-spacing:.06em}
-  header .brand small{display:block; font-weight:400; font-size:.68rem; letter-spacing:.12em; color:#B9C0C9}
-  .dispo{display:flex; align-items:center; gap:8px; font-size:.8rem; font-weight:600}
-  .switch{position:relative; width:52px; height:30px; background:#39424E; border-radius:99px; transition:background .2s}
-  .switch::after{content:''; position:absolute; top:3px; left:3px; width:24px; height:24px; border-radius:50%; background:#fff; transition:transform .2s}
-  .switch.on{background:var(--ok)}
-  .switch.on::after{transform:translateX(22px)}
+    padding:14px 16px; padding-top:calc(14px + env(safe-area-inset-top))}
+  header .brand{font-family:'Syne',sans-serif; font-weight:800; font-size:1rem; text-transform:uppercase; letter-spacing:.06em}
+  header .brand small{display:block; font-family:'DM Sans'; font-weight:400; font-size:.66rem; letter-spacing:.12em; color:#B9C0C9}
+  .dispo-mini{display:flex; align-items:center; gap:6px; font-size:.78rem; font-weight:700; color:#fff}
+  .dispo-mini .led{width:12px; height:12px; border-radius:50%}
 
   main{padding:16px; max-width:560px; margin:0 auto}
-
-  /* ---------- Cartes ---------- */
   .card{background:var(--card); border:1px solid var(--line); border-radius:var(--r); padding:16px; margin-bottom:14px}
-  .card .meta{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px}
-  .tag{font-size:.72rem; font-weight:800; text-transform:uppercase; letter-spacing:.05em;
-       padding:4px 10px; border-radius:99px; background:var(--paper); color:var(--steel)}
-  .tag.trade{background:var(--ink); color:var(--gilet)}
+  .meta{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px}
+  .tag{font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em;
+    padding:4px 10px; border-radius:99px; background:var(--paper); color:var(--steel)}
+  .tag.trade{background:var(--ink); color:var(--accent)}
   .tag.urgent{background:var(--danger); color:#fff}
-  .card p.desc{font-size:.95rem; line-height:1.45; margin:8px 0 12px}
+  .sub{font-size:.85rem; color:var(--steel); line-height:1.5}
+  .desc{font-size:.95rem; line-height:1.45; margin:8px 0 12px}
   .repere{background:var(--paper); border-radius:10px; padding:10px 12px; font-size:.9rem; margin-bottom:12px}
   .repere b{display:block; font-size:.7rem; text-transform:uppercase; letter-spacing:.08em; color:var(--steel); margin-bottom:2px}
 
-  /* ---------- Signature : jauge hachurée "chantier" ---------- */
+  /* Jauge hachurée orange/noir */
   .window{margin:12px 0}
-  .window .label{display:flex; justify-content:space-between; font-size:.75rem; font-weight:600; color:var(--steel); margin-bottom:6px}
-  .window .label .left{color:var(--ink); font-weight:800}
+  .window .label{display:flex; justify-content:space-between; font-size:.75rem; font-weight:500; color:var(--steel); margin-bottom:6px}
+  .window .label .left{color:var(--ink); font-weight:700}
   .gauge{height:14px; border-radius:99px; background:var(--paper); border:1px solid var(--line); overflow:hidden}
-  .gauge .fill{
-    height:100%; border-radius:99px; transition:width 1s linear;
-    background:repeating-linear-gradient(45deg, var(--gilet) 0 10px, var(--ink) 10px 20px);
-  }
+  .gauge .fill{height:100%; border-radius:99px; transition:width 1s linear;
+    background:repeating-linear-gradient(45deg, var(--accent) 0 10px, var(--ink) 10px 20px)}
   .gauge .fill.low{background:repeating-linear-gradient(45deg, var(--danger) 0 10px, var(--ink) 10px 20px)}
 
-  /* ---------- Boutons ---------- */
   .row{display:flex; gap:10px}
-  .btn{
-    flex:1; min-height:52px; border-radius:12px; font-size:1rem; font-weight:800;
-    display:flex; align-items:center; justify-content:center; gap:8px;
-  }
+  .btn{flex:1; min-height:52px; border-radius:12px; font-size:1rem; font-weight:700;
+    display:flex; align-items:center; justify-content:center; gap:8px}
   .btn:active{transform:scale(.98)}
-  .btn.accept{background:var(--gilet); color:var(--gilet-ink)}
+  .btn.accent{background:var(--accent); color:var(--accent-ink)}
   .btn.ghost{background:var(--paper); color:var(--steel); border:1px solid var(--line)}
   .btn.dark{background:var(--ink); color:#fff}
   .btn.ok{background:var(--ok); color:#fff}
   .btn.danger-line{background:none; color:var(--danger); border:1px solid var(--danger)}
   .btn[disabled]{opacity:.5; pointer-events:none}
-  .btn.small{min-height:44px; font-size:.9rem; flex:none; padding:0 16px}
 
-  /* ---------- Statut mission en cours ---------- */
-  .status-line{display:flex; align-items:center; gap:8px; font-weight:800; font-size:.85rem;
+  .status-line{display:flex; align-items:center; gap:8px; font-weight:700; font-size:.85rem;
     text-transform:uppercase; letter-spacing:.05em; margin-bottom:10px}
-  .dot{width:10px; height:10px; border-radius:50%; background:var(--gilet)}
+  .dot{width:10px; height:10px; border-radius:50%; background:var(--accent)}
 
-  /* ---------- Formulaires ---------- */
-  label.f{display:block; font-size:.78rem; font-weight:800; text-transform:uppercase;
+  label.f{display:block; font-size:.78rem; font-weight:700; text-transform:uppercase;
     letter-spacing:.06em; color:var(--steel); margin:14px 0 6px}
-  input[type=text],input[type=tel],input[type=number],textarea,select{
-    width:100%; padding:14px; border:1px solid var(--line); border-radius:12px;
-    font-family:inherit; font-size:1rem; background:#fff; color:var(--ink);
-  }
+  input[type=text],input[type=tel],input[type=number],textarea{width:100%; padding:14px;
+    border:1px solid var(--line); border-radius:12px; font-family:inherit; font-size:1rem; background:#fff; color:var(--ink)}
   textarea{min-height:90px; resize:vertical}
-  input:focus,textarea:focus{outline:3px solid var(--gilet); border-color:var(--gilet)}
+  input:focus,textarea:focus{outline:3px solid var(--accent); border-color:var(--accent)}
   .chips{display:flex; flex-wrap:wrap; gap:8px}
   .chip{padding:10px 14px; border-radius:99px; border:1px solid var(--line); background:#fff;
-    font-size:.9rem; font-weight:600; color:var(--steel)}
-  .chip.sel{background:var(--ink); color:var(--gilet); border-color:var(--ink)}
+    font-size:.9rem; font-weight:500; color:var(--steel)}
+  .chip.sel{background:var(--ink); color:var(--accent); border-color:var(--ink)}
+  .chip.big{width:100%; text-align:left; padding:13px 16px; border-radius:12px; font-size:.95rem}
+  .mic{flex:none; width:52px; background:var(--ink); color:#fff; border-radius:12px; font-size:1.2rem}
+  .mic.rec{background:var(--danger); animation:pulse 1s infinite}
+  @keyframes pulse{50%{opacity:.6}}
 
-  /* ---------- Tabs ---------- */
-  nav.tabs{
-    position:fixed; bottom:0; left:0; right:0; z-index:20;
-    display:flex; background:var(--ink); padding-bottom:env(safe-area-inset-bottom);
-  }
-  nav.tabs button{
-    flex:1; background:none; color:#8E97A3; font-size:.72rem; font-weight:600;
-    padding:10px 0 12px; display:flex; flex-direction:column; align-items:center; gap:3px;
-  }
+  /* Landing */
+  .hero{padding:30px 4px 18px; text-align:center}
+  .hero .logo{font-family:'Syne'; font-weight:800; font-size:1.7rem; letter-spacing:-.02em}
+  .hero .logo em{color:var(--accent); font-style:normal}
+  .hero p{color:var(--steel); font-size:1rem; margin:10px auto 20px; max-width:320px; line-height:1.5}
+  .proofs{display:flex; gap:8px; margin-bottom:16px}
+  .proofs span{flex:1; background:var(--card); border:1px solid var(--line); border-radius:12px;
+    padding:10px 8px; font-size:.68rem; font-weight:500; color:var(--steel); text-align:center; line-height:1.35}
+  .proofs b{display:block; font-size:1rem}
+
+  /* Wizard */
+  .steps{display:flex; gap:6px; margin:4px 0 16px}
+  .steps i{flex:1; height:4px; border-radius:99px; background:var(--line)}
+  .steps i.on{background:var(--accent)}
+  .back{background:none; color:var(--steel); font-size:.85rem; font-weight:500; padding:0 0 12px}
+
+  /* Dispo 3 états */
+  .dispo3{display:flex; gap:8px}
+  .dispo3 button{flex:1; padding:13px 6px; border-radius:12px; border:2px solid var(--line);
+    background:#fff; font-weight:700; font-size:.82rem; color:var(--steel);
+    display:flex; flex-direction:column; align-items:center; gap:4px}
+  .dispo3 .led{width:14px; height:14px; border-radius:50%}
+  .dispo3 button.sel{border-color:var(--ink); color:var(--ink); background:var(--paper)}
+
+  /* Score /100 */
+  .score-big{display:flex; align-items:baseline; gap:8px}
+  .score-big .n{font-family:'Syne'; font-weight:800; font-size:2.6rem; color:var(--accent)}
+  .score-big small{font-size:.9rem; color:var(--steel); font-weight:500}
+  .comp{margin-top:12px}
+  .comp .l{display:flex; justify-content:space-between; font-size:.82rem; margin-bottom:4px}
+  .comp .l b{font-weight:700}
+  .comp .bar{height:8px; border-radius:99px; background:var(--paper); border:1px solid var(--line); overflow:hidden; margin-bottom:3px}
+  .comp .bar i{display:block; height:100%; background:var(--accent); border-radius:99px}
+  .comp .tip{font-size:.72rem; color:var(--steel); margin-bottom:10px}
+
+  /* Grille de prix (devis assisté) */
+  .ranges{margin:10px 0}
+  .ranges button{display:flex; justify-content:space-between; gap:8px; width:100%; text-align:left;
+    background:var(--paper); border:1px solid var(--line); border-radius:10px; padding:10px 12px;
+    font-size:.85rem; margin-bottom:6px; color:var(--ink)}
+  .ranges button b{color:var(--accent); white-space:nowrap}
+
+  /* Tutoriel */
+  .tuto .n{display:inline-flex; width:30px; height:30px; border-radius:50%; background:var(--accent);
+    color:#fff; font-family:'Syne'; font-weight:800; align-items:center; justify-content:center; margin-bottom:8px}
+
+  .money{font-family:'Syne'; font-weight:800; font-size:1.3rem}
+  .money small{font-family:'DM Sans'; font-weight:500; font-size:.8rem; color:var(--steel)}
+  .pl{display:flex; justify-content:space-between; gap:8px; padding:8px 0; border-top:1px solid var(--line); font-size:.85rem}
+
+  nav.tabs{position:fixed; bottom:0; left:0; right:0; z-index:20; display:flex; background:var(--ink);
+    padding-bottom:env(safe-area-inset-bottom)}
+  nav.tabs button{flex:1; background:none; color:#8E97A3; font-size:.7rem; font-weight:500;
+    padding:10px 0 12px; display:flex; flex-direction:column; align-items:center; gap:3px; position:relative}
   nav.tabs button .ico{font-size:1.25rem; line-height:1}
-  nav.tabs button.active{color:var(--gilet)}
-  nav.tabs button .badge{position:absolute; transform:translate(14px,-4px); background:var(--danger);
-    color:#fff; font-size:.62rem; font-weight:800; border-radius:99px; padding:1px 6px}
+  nav.tabs button.active{color:var(--accent)}
+  nav.tabs button .badge{position:absolute; top:4px; right:22%; background:var(--danger); color:#fff;
+    font-size:.6rem; font-weight:700; border-radius:99px; padding:1px 6px}
 
-  /* ---------- Divers ---------- */
-  .empty{text-align:center; color:var(--steel); padding:48px 24px; font-size:.95rem; line-height:1.5}
-  .empty b{display:block; font-size:1.05rem; color:var(--ink); margin-bottom:6px}
-  .toast{
-    position:fixed; left:16px; right:16px; bottom:88px; z-index:50;
-    background:var(--ink); color:#fff; padding:14px 16px; border-radius:12px;
-    font-size:.9rem; font-weight:600; opacity:0; transform:translateY(8px); transition:.25s;
-    pointer-events:none;
-  }
+  .empty{text-align:center; color:var(--steel); padding:44px 24px; font-size:.95rem; line-height:1.5}
+  .empty b{display:block; font-family:'Syne'; font-size:1.05rem; color:var(--ink); margin-bottom:6px}
+  .toast{position:fixed; left:16px; right:16px; bottom:88px; z-index:50; background:var(--ink); color:#fff;
+    padding:14px 16px; border-radius:12px; font-size:.9rem; font-weight:500; opacity:0;
+    transform:translateY(8px); transition:.25s; pointer-events:none}
   .toast.show{opacity:1; transform:none}
   .photos{display:flex; gap:8px; overflow-x:auto; margin-bottom:10px}
   .photos img{height:84px; border-radius:10px; border:1px solid var(--line)}
   .screen{display:none}
   .screen.on{display:block}
-  .kyc-note{background:var(--gilet); color:var(--gilet-ink); border-radius:var(--r);
-    padding:14px 16px; font-size:.9rem; font-weight:600; line-height:1.4; margin-bottom:14px}
-  .money{font-weight:900; font-size:1.3rem}
-  .money small{font-weight:600; font-size:.8rem; color:var(--steel)}
-  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+  .kyc-note{background:var(--accent); color:#fff; border-radius:var(--r); padding:14px 16px;
+    font-size:.9rem; font-weight:500; line-height:1.4; margin-bottom:14px}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important}}
 </style>
 </head>
 <body>
 
 <header>
   <div class="brand">Espace artisan<small>Dépannage Douala</small></div>
-  <div class="dispo" id="dispoWrap" hidden>
-    <span id="dispoLabel">Disponible</span>
-    <div class="switch on" id="dispoSwitch" role="switch" aria-checked="true" tabindex="0"></div>
-  </div>
+  <div class="dispo-mini" id="dispoMini" hidden><span class="led"></span><span class="txt"></span></div>
 </header>
 
 <main>
+  <!-- ========== LANDING RECRUTEMENT ========== -->
+  <section class="screen on" id="scr-landing">
+    <div class="hero">
+      <div class="logo">DEVIENS <em>PARTENAIRE</em></div>
+      <p>Des clients près de chez toi. Déplacement toujours payé. Ton argent sous 48 h.</p>
+      <button class="btn accent" id="btnJoin" style="width:100%">Devenir artisan partenaire</button>
+      <button class="btn ghost" id="btnLogin" style="width:100%; margin-top:10px">J’ai déjà un compte</button>
+    </div>
+    <div class="proofs">
+      <span><b>💸</b>Déplacement garanti 1 000 F</span>
+      <span><b>⚡</b>Reversement sous 48 h</span>
+      <span><b>🆓</b>Zéro frais d’inscription</span>
+    </div>
+  </section>
+
   <!-- ========== AUTH ========== -->
-  <section class="screen on" id="scr-auth">
+  <section class="screen" id="scr-auth">
+    <button class="back" id="authBack">← Retour</button>
     <div class="card">
       <h2 style="margin-bottom:6px">Connexion</h2>
-      <p style="color:var(--steel); font-size:.9rem">Ton numéro reçoit un code par SMS. Rien d’autre à retenir.</p>
+      <p class="sub">Ton numéro reçoit un code par SMS. Rien d’autre à retenir.</p>
       <label class="f" for="phone">Numéro de téléphone</label>
       <input type="tel" id="phone" placeholder="6 XX XX XX XX" inputmode="numeric" autocomplete="tel">
       <div id="otpZone" hidden>
         <label class="f" for="otp">Code reçu par SMS</label>
         <input type="text" id="otp" placeholder="123456" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
       </div>
-      <div class="row" style="margin-top:16px">
-        <button class="btn accept" id="btnAuth">Recevoir mon code</button>
-      </div>
+      <div class="row" style="margin-top:16px"><button class="btn accent" id="btnAuth">Recevoir mon code</button></div>
     </div>
   </section>
 
-  <!-- ========== ONBOARDING ========== -->
-  <section class="screen" id="scr-onboard">
-    <div class="card">
-      <h2 style="margin-bottom:6px">Ton dossier artisan</h2>
-      <p style="color:var(--steel); font-size:.9rem">5 minutes. Le badge « Professionnel vérifié » se gagne ici.</p>
+  <!-- ========== ONBOARDING WIZARD ========== -->
+  <section class="screen" id="scr-wizard">
+    <button class="back" id="wBack">← Retour</button>
+    <div class="steps" id="wSteps"></div>
 
+    <div class="card" data-step="0">
+      <h2 style="margin-bottom:4px">Ton profil</h2>
+      <p class="sub">Le client verra ton nom et ta photo avant d’ouvrir sa porte.</p>
       <label class="f" for="obName">Nom complet</label>
       <input type="text" id="obName" autocomplete="name">
+      <label class="f" for="obAvatar">Photo de profil (visage visible)</label>
+      <input type="file" id="obAvatar" accept="image/*" capture="user">
+      <button class="btn accent" id="w0Next" style="margin-top:16px; width:100%">Continuer</button>
+    </div>
 
-      <label class="f">Tes métiers (3 maximum)</label>
-      <div class="chips" id="obTrades"></div>
-
-      <label class="f">Tes quartiers d’intervention</label>
-      <div class="chips" id="obZones"></div>
-
-      <label class="f" for="obMomo">Numéro Mobile Money (reversements)</label>
-      <input type="tel" id="obMomo" placeholder="6 XX XX XX XX" inputmode="numeric">
-
-      <label class="f" for="obCniR">CNI — recto (photo)</label>
-      <input type="file" id="obCniR" accept="image/*" capture="environment">
-      <label class="f" for="obCniV">CNI — verso (photo)</label>
-      <input type="file" id="obCniV" accept="image/*" capture="environment">
-
-      <div class="row" style="margin-top:18px">
-        <button class="btn accept" id="btnOnboard">Envoyer mon dossier</button>
+    <div class="card" data-step="1" hidden>
+      <h2 style="margin-bottom:4px">Tes métiers</h2>
+      <p class="sub">3 maximum — choisis ce que tu maîtrises vraiment.</p>
+      <div class="chips" id="obTrades" style="margin-top:12px"></div>
+      <label class="f">Ton niveau (jamais affiché aux clients — sert au classement)</label>
+      <div class="chips" id="obLevel">
+        <button type="button" class="chip" data-l="debutant">Débutant</button>
+        <button type="button" class="chip" data-l="confirme">Confirmé</button>
+        <button type="button" class="chip" data-l="expert">Expert</button>
       </div>
+      <button class="btn accent" id="w1Next" style="margin-top:16px; width:100%">Continuer</button>
+    </div>
+
+    <div class="card" data-step="2" hidden>
+      <h2 style="margin-bottom:4px">Tes quartiers</h2>
+      <p class="sub">Là où tu peux intervenir vite.</p>
+      <div class="chips" id="obZones" style="margin-top:12px"></div>
+      <label class="f" for="obMomo">Numéro Mobile Money (tes reversements)</label>
+      <input type="tel" id="obMomo" placeholder="6 XX XX XX XX" inputmode="numeric">
+      <button class="btn accent" id="w2Next" style="margin-top:16px; width:100%">Continuer</button>
+    </div>
+
+    <div class="card" data-step="3" hidden>
+      <h2 style="margin-bottom:4px">Vérification</h2>
+      <p class="sub">Le badge ✔ Vérifié, c’est ce qui fait que le client te choisit toi.</p>
+      <label class="f" for="obCniR">CNI — recto</label>
+      <input type="file" id="obCniR" accept="image/*" capture="environment">
+      <label class="f" for="obCniV">CNI — verso</label>
+      <input type="file" id="obCniV" accept="image/*" capture="environment">
+      <label class="f" for="obPortfolio">Photos de tes réalisations (3 minimum)</label>
+      <input type="file" id="obPortfolio" accept="image/*" multiple>
+      <p class="sub" style="margin-top:8px">Registre de commerce ou certificats ? Facultatif — tu pourras les ajouter plus tard pour renforcer ton profil.</p>
+      <button class="btn accent" id="w3Send" style="margin-top:16px; width:100%">Envoyer mon dossier</button>
     </div>
   </section>
 
   <!-- ========== ATTENTE KYC ========== -->
   <section class="screen" id="scr-pending">
-    <div class="kyc-note">🕗 Dossier reçu. La vérification prend en général moins de 24 h — tu recevras un SMS dès l’activation.</div>
+    <div class="kyc-note">🕗 Dossier reçu. Vérification en général sous 24 h — tu recevras un SMS dès l’activation.</div>
     <div class="card">
-      <p style="font-size:.9rem; color:var(--steel); line-height:1.5">Pendant ce temps, prépare : photos de tes réalisations, plages de disponibilité, et vérifie que ton numéro Mobile Money est bien à ton nom.</p>
+      <h3 style="font-size:1rem; margin-bottom:8px">Pendant l’attente, prépare :</h3>
+      <p class="sub">— tes plages de disponibilité type<br>— vérifie que ton Mobile Money est bien à ton nom<br>— repère tes quartiers sur le terrain (temps de trajet réels)</p>
     </div>
   </section>
 
-  <!-- ========== DISPATCH ========== -->
+  <!-- ========== TUTORIEL (obligatoire, une fois) ========== -->
+  <section class="screen" id="scr-tuto">
+    <h2 style="margin:6px 0 14px">3 choses à savoir, 30 secondes</h2>
+    <div class="card tuto"><span class="n">1</span>
+      <h3 style="font-size:1rem; margin-bottom:6px">La fenêtre de réponse</h3>
+      <p class="sub">Chaque mission proposée a un chrono : <b>5 min</b> si c’est urgent, <b>15 min</b> dans la journée, <b>30 min</b> cette semaine. Le premier qui accepte gagne la mission. Reste 🟢 Disponible pour en recevoir.</p></div>
+    <div class="card tuto"><span class="n">2</span>
+      <h3 style="font-size:1rem; margin-bottom:6px">Le devis dans l’app, toujours</h3>
+      <p class="sub">Sur place, tu proposes ton prix <b>dans l’application</b>, le client accepte, tu travailles. C’est ce qui déclenche ton paiement et te protège en cas de litige. Un travail sans devis accepté = non couvert.</p></div>
+    <div class="card tuto"><span class="n">3</span>
+      <h3 style="font-size:1rem; margin-bottom:6px">La garantie 7 jours = ton arme</h3>
+      <p class="sub">Si le problème réparé revient sous 7 jours, tu repasses gratuitement. C’est exactement ce que le dépanneur informel ne peut pas promettre — c’est pour ça que les clients te choisiront <b>toi</b>.</p></div>
+    <button class="btn accent" id="btnTutoDone" style="width:100%">J’ai compris — c’est parti</button>
+  </section>
+
+  <!-- ========== APP : ACCUEIL ========== -->
+  <section class="screen" id="scr-dash">
+    <div class="card">
+      <h3 style="font-size:.95rem; margin-bottom:10px">Ma disponibilité</h3>
+      <div class="dispo3" id="dispo3">
+        <button data-a="available"><span class="led" style="background:var(--ok)"></span>Disponible</button>
+        <button data-a="busy"><span class="led" style="background:var(--busy)"></span>Occupé</button>
+        <button data-a="offline"><span class="led" style="background:var(--danger)"></span>Hors ligne</button>
+      </div>
+    </div>
+    <div class="card" id="dashScore"></div>
+    <div class="card" id="dashWeek"></div>
+  </section>
+
+  <!-- ========== APP : PROPOSÉES ========== -->
   <section class="screen" id="scr-dispatch">
     <h2 style="margin:4px 0 14px">Missions proposées</h2>
     <div id="dispatchList"></div>
   </section>
 
-  <!-- ========== EN COURS ========== -->
+  <!-- ========== APP : EN COURS ========== -->
   <section class="screen" id="scr-active">
     <h2 style="margin:4px 0 14px">Mes missions</h2>
     <div id="activeList"></div>
   </section>
 
-  <!-- ========== PROFIL ========== -->
+  <!-- ========== APP : PROFIL / REVENUS ========== -->
   <section class="screen" id="scr-profile">
     <h2 style="margin:4px 0 14px">Mon profil</h2>
     <div class="card" id="profileCard"></div>
@@ -220,7 +306,8 @@
 </main>
 
 <nav class="tabs" id="tabs" hidden>
-  <button data-tab="dispatch" class="active"><span class="ico">📢</span>Proposées<span class="badge" id="badgeDispatch" hidden></span></button>
+  <button data-tab="dash" class="active"><span class="ico">🏠</span>Accueil</button>
+  <button data-tab="dispatch"><span class="ico">📢</span>Proposées<span class="badge" id="badgeDispatch" hidden></span></button>
   <button data-tab="active"><span class="ico">🔧</span>En cours</button>
   <button data-tab="profile"><span class="ico">👤</span>Profil</button>
 </nav>
@@ -233,34 +320,30 @@
 const SUPABASE_URL = 'https://VOTRE-PROJET.supabase.co';   // ← à remplir
 const SUPABASE_ANON_KEY = 'VOTRE_ANON_KEY';                // ← à remplir
 const FN = '/.netlify/functions';
-
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 /* ================= ÉTAT ================= */
 const S = {
-  user: null, profile: null, details: null,
-  trades: [], zones: [], dispatches: [], missions: [],
-  timer: null, channel: null,
+  user:null, profile:null, details:null, trades:[], zones:[], ranges:[],
+  dispatches:[], missions:[], timer:null, channel:null, step:0,
+  ob:{ trades:new Set(), zones:new Set(), level:null },
 };
 const $ = (id) => document.getElementById(id);
 const fcfa = (n) => (n ?? 0).toLocaleString('fr-FR') + ' FCFA';
+function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show');
+  clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),3200); }
+function show(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on')); $(id).classList.add('on'); }
+function normPhone(raw){ const d=String(raw).replace(/\D/g,'');
+  if(/^237\d{9}$/.test(d)) return '+'+d; if(/^6\d{8}$/.test(d)) return '+237'+d; return null; }
+function escapeHtml(s){ return String(s ?? '').replace(/[&<>"']/g,(c)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+const TRADE_LABEL = (id) => (S.trades.find(t=>t.id===id)?.label_fr) || id;
+const zoneLabel = (id) => (S.zones.find(z=>z.id===id)?.label) || id;
 
-function toast(msg) {
-  const t = $('toast'); t.textContent = msg; t.classList.add('show');
-  clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 3200);
-}
-function show(id) {
-  document.querySelectorAll('.screen').forEach((s) => s.classList.remove('on'));
-  $(id).classList.add('on');
-}
-function normPhone(raw) {
-  const d = String(raw).replace(/\D/g, '');
-  if (/^237\d{9}$/.test(d)) return '+' + d;
-  if (/^6\d{8}$/.test(d)) return '+237' + d;
-  return null;
-}
+/* ================= NAVIGATION LANDING/AUTH ================= */
+$('btnJoin').onclick = () => show('scr-auth');
+$('btnLogin').onclick = () => show('scr-auth');
+$('authBack').onclick = () => show('scr-landing');
 
-/* ================= AUTH ================= */
 let otpPhone = null;
 $('btnAuth').addEventListener('click', async () => {
   const btn = $('btnAuth');
@@ -274,121 +357,233 @@ $('btnAuth').addEventListener('click', async () => {
     otpPhone = p; $('otpZone').hidden = false; $('otp').focus();
     btn.textContent = 'Valider le code';
   } else {
-    const token = $('otp').value.trim();
-    if (token.length < 4) return toast('Saisis le code reçu par SMS');
     btn.disabled = true;
-    const { error } = await sb.auth.verifyOtp({ phone: otpPhone, token, type: 'sms' });
+    const { error } = await sb.auth.verifyOtp({ phone: otpPhone, token: $('otp').value.trim(), type: 'sms' });
     btn.disabled = false;
     if (error) return toast('Code incorrect ou expiré');
     boot();
   }
 });
-
 $('btnLogout').addEventListener('click', async () => { await sb.auth.signOut(); location.reload(); });
 
 /* ================= BOOT ================= */
 async function boot() {
-  const { data: { user } } = await sb.auth.getUser();
-  if (!user) return show('scr-auth');
-  S.user = user;
-
+  const { data:{ user } } = await sb.auth.getUser();
   const [{ data: trades }, { data: zones }] = await Promise.all([
     sb.from('trades').select('*').eq('is_active', true),
     sb.from('zones').select('*').eq('is_active', true),
   ]);
   S.trades = trades || []; S.zones = zones || [];
+  if (!user) return show('scr-landing');
+  S.user = user;
 
   const { data: profile } = await sb.from('profiles').select('*').eq('id', user.id).maybeSingle();
   S.profile = profile;
-  if (!profile) return renderOnboarding();
+  if (!profile) return startWizard();
 
   const { data: details } = await sb.from('artisan_details').select('*').eq('profile_id', user.id).maybeSingle();
   S.details = details;
-  if (!details) return renderOnboarding();
+  if (!details) return startWizard();
   if (details.kyc_status !== 'approved') return show('scr-pending');
+  if (!details.tutorial_done) return show('scr-tuto');
+  enterApp();
+}
 
-  // Artisan validé → app complète
-  $('tabs').hidden = false; $('dispoWrap').hidden = false;
-  setDispoUI(details.is_available);
-  await Promise.all([loadDispatches(), loadMissions(), loadProfileTab()]);
+$('btnTutoDone').onclick = async () => {
+  await sb.from('artisan_details').update({ tutorial_done: true }).eq('profile_id', S.user.id);
+  S.details.tutorial_done = true;
+  enterApp();
+};
+
+async function enterApp() {
+  $('tabs').hidden = false;
+  renderDispoUI(S.details.availability);
+  const { data: ranges } = await sb.from('price_ranges').select('*').eq('is_active', true);
+  S.ranges = ranges || [];
+  await Promise.all([loadDispatches(), loadMissions()]);
+  renderDashboard();
   subscribeRealtime();
   startCountdown();
-  show('scr-dispatch');
+  switchTab('dash');
 }
 
-/* ================= ONBOARDING ================= */
-const obSel = { trades: new Set(), zones: new Set() };
-function chip(list, set, max) {
-  return list.map((x) =>
-    `<button type="button" class="chip" data-id="${x.id}">${x.label_fr || x.label}</button>`).join('');
+/* ================= ONBOARDING WIZARD ================= */
+const OB_STEPS = 4;
+function startWizard(){
+  S.step = 0;
+  $('obTrades').innerHTML = S.trades.map(t=>`<button type="button" class="chip" data-id="${t.id}">${t.label_fr}</button>`).join('');
+  $('obZones').innerHTML = S.zones.map(z=>`<button type="button" class="chip" data-id="${z.id}">${z.label}</button>`).join('');
+  renderObStep(); show('scr-wizard');
 }
-function renderOnboarding() {
-  $('obTrades').innerHTML = chip(S.trades);
-  $('obZones').innerHTML = chip(S.zones);
-  $('obTrades').onclick = (e) => pick(e, obSel.trades, 3);
-  $('obZones').onclick = (e) => pick(e, obSel.zones, 99);
-  show('scr-onboard');
+function renderObStep(){
+  document.querySelectorAll('#scr-wizard [data-step]').forEach(el => el.hidden = +el.dataset.step !== S.step);
+  $('wSteps').innerHTML = Array.from({length:OB_STEPS},(_,i)=>`<i class="${i<=S.step?'on':''}"></i>`).join('');
 }
-function pick(e, set, max) {
+$('wBack').onclick = () => { if (S.step === 0) return show('scr-landing'); S.step--; renderObStep(); };
+
+$('w0Next').onclick = () => {
+  if ($('obName').value.trim().length < 3) return toast('Ton nom complet est requis');
+  if (!$('obAvatar').files[0]) return toast('La photo de profil est obligatoire — le client la verra avant d’ouvrir');
+  S.step = 1; renderObStep();
+};
+$('obTrades').onclick = (e) => {
   const b = e.target.closest('.chip'); if (!b) return;
   const id = b.dataset.id;
-  if (set.has(id)) { set.delete(id); b.classList.remove('sel'); }
-  else if (set.size < max) { set.add(id); b.classList.add('sel'); }
-  else toast(`Maximum ${max} choix`);
-}
-$('btnOnboard').addEventListener('click', async () => {
-  const name = $('obName').value.trim();
-  const momo = normPhone($('obMomo').value);
-  const recto = $('obCniR').files[0], verso = $('obCniV').files[0];
-  if (name.length < 3) return toast('Ton nom complet est requis');
-  if (!obSel.trades.size) return toast('Choisis au moins un métier');
-  if (!obSel.zones.size) return toast('Choisis au moins un quartier');
-  if (!momo) return toast('Numéro Mobile Money invalide');
-  if (!recto || !verso) return toast('Les deux photos de CNI sont requises');
+  if (S.ob.trades.has(id)) { S.ob.trades.delete(id); b.classList.remove('sel'); }
+  else if (S.ob.trades.size < 3) { S.ob.trades.add(id); b.classList.add('sel'); }
+  else toast('Maximum 3 métiers — choisis ce que tu maîtrises le mieux');
+};
+$('obLevel').onclick = (e) => {
+  const b = e.target.closest('.chip'); if (!b) return;
+  S.ob.level = b.dataset.l;
+  $('obLevel').querySelectorAll('.chip').forEach(x=>x.classList.toggle('sel', x===b));
+};
+$('w1Next').onclick = () => {
+  if (!S.ob.trades.size) return toast('Choisis au moins un métier');
+  if (!S.ob.level) return toast('Indique ton niveau (jamais montré aux clients)');
+  S.step = 2; renderObStep();
+};
+$('obZones').onclick = (e) => {
+  const b = e.target.closest('.chip'); if (!b) return;
+  const id = b.dataset.id;
+  if (S.ob.zones.has(id)) { S.ob.zones.delete(id); b.classList.remove('sel'); }
+  else { S.ob.zones.add(id); b.classList.add('sel'); }
+};
+$('w2Next').onclick = () => {
+  if (!S.ob.zones.size) return toast('Choisis au moins un quartier');
+  if (!normPhone($('obMomo').value)) return toast('Numéro Mobile Money invalide');
+  S.step = 3; renderObStep();
+};
 
-  const btn = $('btnOnboard'); btn.disabled = true; btn.textContent = 'Envoi en cours…';
+$('w3Send').onclick = async () => {
+  const recto = $('obCniR').files[0], verso = $('obCniV').files[0];
+  const portfolio = [...$('obPortfolio').files];
+  if (!recto || !verso) return toast('Les deux photos de CNI sont requises');
+  if (portfolio.length < 3) return toast('3 photos de réalisations minimum — c’est ta vitrine');
+  const btn = $('w3Send'); btn.disabled = true; btn.textContent = 'Envoi en cours…';
   try {
-    const up = async (file, side) => {
+    // KYC (bucket privé)
+    const upKyc = async (file, side) => {
       const path = `${S.user.id}/${side}.jpg`;
       const { error } = await sb.storage.from('kyc').upload(path, file, { upsert: true });
       if (error) throw error; return path;
     };
-    const [rPath, vPath] = [await up(recto, 'recto'), await up(verso, 'verso')];
-
-    let { error: e1 } = await sb.from('profiles').upsert({
-      id: S.user.id, role: 'artisan', full_name: name, phone: S.user.phone,
+    const [rPath, vPath] = [await upKyc(recto, 'recto'), await upKyc(verso, 'verso')];
+    // Avatar + portfolio (bucket public)
+    const avatarFile = $('obAvatar').files[0];
+    const avatarPath = `${S.user.id}/avatar.jpg`;
+    await sb.storage.from('avatars').upload(avatarPath, avatarFile, { upsert: true });
+    const photoUrl = `${SUPABASE_URL}/storage/v1/object/public/avatars/${avatarPath}`;
+    const pfPaths = [];
+    for (let i = 0; i < Math.min(portfolio.length, 6); i++) {
+      const p = `${S.user.id}/portfolio-${i}.jpg`;
+      const { error } = await sb.storage.from('avatars').upload(p, portfolio[i], { upsert: true });
+      if (!error) pfPaths.push(`${SUPABASE_URL}/storage/v1/object/public/avatars/${p}`);
+    }
+    // Profil + détails
+    const { error: e1 } = await sb.from('profiles').upsert({
+      id: S.user.id, role: 'artisan', full_name: $('obName').value.trim(),
+      phone: S.user.phone, photo_url: photoUrl,
     });
     if (e1) throw e1;
     const { error: e2 } = await sb.from('artisan_details').upsert({
       profile_id: S.user.id, cni_recto_path: rPath, cni_verso_path: vPath,
-      momo_number: momo.replace('+', ''),
+      momo_number: normPhone($('obMomo').value).replace('+',''),
+      level: S.ob.level, portfolio: pfPaths,
     });
     if (e2) throw e2;
-    for (const t of obSel.trades) await sb.from('artisan_trades').insert({ profile_id: S.user.id, trade_id: t });
-    for (const z of obSel.zones) await sb.from('artisan_zones').insert({ profile_id: S.user.id, zone_id: z });
+    for (const t of S.ob.trades) await sb.from('artisan_trades').insert({ profile_id: S.user.id, trade_id: t });
+    for (const z of S.ob.zones) await sb.from('artisan_zones').insert({ profile_id: S.user.id, zone_id: z });
     show('scr-pending');
   } catch (err) {
     console.error(err); toast('Envoi impossible. Vérifie ta connexion et réessaie.');
   } finally { btn.disabled = false; btn.textContent = 'Envoyer mon dossier'; }
-});
+};
 
-/* ================= DISPO ================= */
-function setDispoUI(on) {
-  $('dispoSwitch').classList.toggle('on', on);
-  $('dispoSwitch').setAttribute('aria-checked', on);
-  $('dispoLabel').textContent = on ? 'Disponible' : 'Indisponible';
+/* ================= DISPONIBILITÉ 3 ÉTATS ================= */
+const DISPO = {
+  available:{ label:'Disponible', color:'var(--ok)' },
+  busy:{ label:'Occupé', color:'var(--busy)' },
+  offline:{ label:'Hors ligne', color:'var(--danger)' },
+};
+function renderDispoUI(a){
+  $('dispoMini').hidden = false;
+  $('dispoMini').querySelector('.led').style.background = DISPO[a].color;
+  $('dispoMini').querySelector('.txt').textContent = DISPO[a].label;
+  document.querySelectorAll('#dispo3 button').forEach(b=>b.classList.toggle('sel', b.dataset.a === a));
 }
-async function toggleDispo() {
-  const next = !S.details.is_available;
-  setDispoUI(next);
+$('dispo3').onclick = async (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  const next = b.dataset.a, prev = S.details.availability;
+  renderDispoUI(next);
   const { error } = await sb.from('artisan_details')
-    .update({ is_available: next }).eq('profile_id', S.user.id);
-  if (error) { setDispoUI(!next); return toast('Changement impossible — réessaie'); }
-  S.details.is_available = next;
-  toast(next ? 'Tu reçois de nouveau les missions' : 'Missions en pause');
+    .update({ availability: next }).eq('profile_id', S.user.id);
+  if (error) { renderDispoUI(prev); return toast('Changement impossible — réessaie'); }
+  S.details.availability = next;
+  toast({ available:'🟢 Tu reçois les missions', busy:'🟠 Missions en pause', offline:'🔴 Hors ligne' }[next]);
+};
+
+/* ================= DASHBOARD & SCORE /100 ================= */
+async function renderDashboard(){
+  const uid = S.user.id;
+  const [{ data: revs }, { data: disp }, { data: mis }, { data: pays }] = await Promise.all([
+    sb.from('reviews').select('rating').eq('artisan_id', uid).eq('is_visible', true),
+    sb.from('mission_dispatches').select('response, notified_at, responded_at').eq('artisan_id', uid),
+    sb.from('missions').select('status, updated_at, final_amount_fcfa, commission_fcfa').eq('assigned_artisan', uid),
+    sb.from('payouts').select('amount_fcfa, status, created_at').eq('artisan_id', uid),
+  ]);
+
+  // --- Composantes du score /100 (transparence totale) ---
+  const ratings = (revs||[]).map(r=>r.rating);
+  const avg = ratings.length ? ratings.reduce((a,b)=>a+b,0)/ratings.length : null;
+  const sEval = Math.round(((avg ?? 3.5)/5)*40);
+
+  const answered = (disp||[]).filter(d=>['accepted','declined','expired'].includes(d.response));
+  const accepted = answered.filter(d=>d.response==='accepted').length;
+  const accRate = answered.length ? accepted/answered.length : null;
+  const sAcc = Math.round((accRate ?? 0.5)*20);
+
+  const delays = (disp||[]).filter(d=>d.responded_at&&d.notified_at)
+    .map(d=>(new Date(d.responded_at)-new Date(d.notified_at))/1000).sort((a,b)=>a-b);
+  const med = delays.length ? delays[Math.floor(delays.length/2)] : null;
+  const sSpeed = med==null ? 8 : (med<60?15: med<180?12: med<600?8:4);
+
+  const assigned = (mis||[]).length;
+  const cancels = (mis||[]).filter(m=>m.status==='cancelled_artisan').length;
+  const cancelRate = assigned ? cancels/assigned : 0;
+  const sFiab = Math.round((1-Math.min(cancelRate*2,1))*15);
+
+  const completed = (mis||[]).filter(m=>['paid','closed'].includes(m.status)).length;
+  const sExp = Math.round(Math.min(completed/20,1)*10);
+
+  const total = sEval+sAcc+sSpeed+sFiab+sExp;
+
+  const comp = (label, val, max, tip) => `
+    <div class="comp">
+      <div class="l"><span>${label}</span><b>${val}/${max}</b></div>
+      <div class="bar"><i style="width:${(val/max)*100}%"></i></div>
+      <div class="tip">${tip}</div>
+    </div>`;
+
+  $('dashScore').innerHTML = `
+    <div class="score-big"><span class="n">${total}</span><small>/ 100 · ton score de fiabilité</small></div>
+    <p class="sub" style="margin:6px 0 4px">Ce score détermine ton ordre dans les propositions de missions. Chaque ligne se gagne :</p>
+    ${comp('Évaluations clients', sEval, 40, avg ? `Moyenne ★ ${avg.toFixed(1)} sur ${ratings.length} avis` : 'Pas encore d’avis — tes premières missions comptent double')}
+    ${comp('Taux d’acceptation', sAcc, 20, accRate!=null ? `${accepted}/${answered.length} propositions acceptées` : 'Accepte les missions qui te correspondent')}
+    ${comp('Rapidité de réponse', sSpeed, 15, med!=null ? `Réponse médiane : ${Math.round(med)}s` : 'Réponds en moins de 3 min pour gagner des points')}
+    ${comp('Fiabilité', sFiab, 15, cancels ? `${cancels} annulation(s) — chaque annulation coûte cher` : 'Aucune annulation — parfait')}
+    ${comp('Expérience', sExp, 10, `${completed} mission(s) terminée(s) · palier complet à 20`)}`;
+
+  // --- Revenus de la semaine ---
+  const weekAgo = Date.now() - 7*86400000;
+  const weekPay = (pays||[]).filter(p=>p.status==='sent' && new Date(p.created_at)>weekAgo)
+    .reduce((s,p)=>s+p.amount_fcfa,0);
+  const inMission = (mis||[]).find(m=>['assigned','en_route','arrived','quote_pending','in_progress'].includes(m.status));
+  $('dashWeek').innerHTML = `
+    <h3 style="font-size:.95rem; margin-bottom:8px">Cette semaine</h3>
+    <p class="money">${fcfa(weekPay)} <small>reversés sur 7 jours</small></p>
+    ${inMission ? `<p class="sub" style="margin-top:8px">🔧 Mission en cours — retrouve-la dans l’onglet « En cours ».</p>` : ''}`;
 }
-$('dispoSwitch').addEventListener('click', toggleDispo);
-$('dispoSwitch').addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') toggleDispo(); });
 
 /* ================= DISPATCHES ================= */
 async function loadDispatches() {
@@ -397,8 +592,6 @@ async function loadDispatches() {
   S.dispatches = (data || []).filter((d) => new Date(d.expires_at) > new Date());
   renderDispatches();
 }
-const TRADE_LABEL = (id) => (S.trades.find((t) => t.id === id)?.label_fr) || id;
-
 async function signedPhotos(paths) {
   const out = [];
   for (const p of (paths || []).slice(0, 4)) {
@@ -407,35 +600,35 @@ async function signedPhotos(paths) {
   }
   return out;
 }
-
 async function renderDispatches() {
   const wrap = $('dispatchList');
   $('badgeDispatch').hidden = !S.dispatches.length;
   $('badgeDispatch').textContent = S.dispatches.length;
   if (!S.dispatches.length) {
-    wrap.innerHTML = `<div class="empty"><b>Aucune mission proposée</b>Reste disponible — la prochaine demande de ton secteur arrive ici avec une fenêtre de 10 minutes.</div>`;
+    wrap.innerHTML = `<div class="empty"><b>Aucune mission proposée</b>Reste 🟢 Disponible — la prochaine demande de ton secteur arrive ici avec son chrono.</div>`;
     return;
   }
   wrap.innerHTML = '';
   for (const d of S.dispatches) {
+    const totalS = Math.max(1, (new Date(d.expires_at) - Date.now())/1000);
     const card = document.createElement('div');
-    card.className = 'card'; card.dataset.dispatch = d.dispatch_id;
+    card.className = 'card';
     card.innerHTML = `
       <div class="meta">
         <span class="tag trade">${TRADE_LABEL(d.trade_id)}</span>
         <span class="tag">${d.zone_label}</span>
-        ${d.urgency ? '<span class="tag urgent">Urgent</span>' : ''}
+        ${d.urgency ? '<span class="tag urgent">🚨 Maintenant</span>' : `<span class="tag">${escapeHtml(d.preferred_slot||'')}</span>`}
       </div>
       <div class="photos" data-photos hidden></div>
       <p class="desc">${escapeHtml(d.description)}</p>
-      <p style="font-size:.85rem;color:var(--steel)">Créneau souhaité : <b>${escapeHtml(d.preferred_slot || 'Dès que possible')}</b> · Forfait déplacement : <b>${fcfa(d.diagnostic_fee_fcfa)}</b></p>
+      <p class="sub">Déplacement garanti : <b>${fcfa(d.diagnostic_fee_fcfa)}</b> — payé même si le devis est refusé.</p>
       <div class="window">
         <div class="label"><span class="left">Fenêtre de réponse</span><span class="countdown" data-expires="${d.expires_at}">—</span></div>
-        <div class="gauge"><div class="fill" data-expires="${d.expires_at}" style="width:100%"></div></div>
+        <div class="gauge"><div class="fill" data-expires="${d.expires_at}" data-total="${Math.round(totalS)}" style="width:100%"></div></div>
       </div>
       <div class="row">
         <button class="btn ghost" data-decline>Passer</button>
-        <button class="btn accept" data-accept>Accepter la mission</button>
+        <button class="btn accent" data-accept>Accepter la mission</button>
       </div>`;
     card.querySelector('[data-accept]').onclick = () => respond(d, 'accepted', card);
     card.querySelector('[data-decline]').onclick = () => respond(d, 'declined', card);
@@ -448,7 +641,6 @@ async function renderDispatches() {
     });
   }
 }
-
 async function respond(d, response, card) {
   card.querySelectorAll('.btn').forEach((b) => (b.disabled = true));
   const { error } = await sb.from('mission_dispatches')
@@ -457,13 +649,13 @@ async function respond(d, response, card) {
     card.querySelectorAll('.btn').forEach((b) => (b.disabled = false));
     return toast('Réponse non envoyée — vérifie ta connexion');
   }
-  // Le trigger a peut-être requalifié en 'expired' (mission déjà prise) : on relit.
   const { data: fresh } = await sb.from('mission_dispatches')
     .select('response').eq('id', d.dispatch_id).single();
   S.dispatches = S.dispatches.filter((x) => x.dispatch_id !== d.dispatch_id);
   renderDispatches();
   if (response === 'declined') return;
   if (fresh?.response === 'accepted') {
+    S.details.availability = 'busy'; renderDispoUI('busy');   // auto-busy (trigger côté base)
     toast('🏆 Mission à toi ! Détails dans « En cours ».');
     await loadMissions(); switchTab('active');
   } else {
@@ -476,9 +668,8 @@ const ACTIVE_STATUSES = ['assigned','en_route','arrived','quote_pending','in_pro
 const STATUS_FR = {
   assigned:'Attribuée — préviens ton départ', en_route:'En route', arrived:'Sur place',
   quote_pending:'Devis envoyé — attente du client', in_progress:'Travaux en cours',
-  done_artisan:'Terminé — attente confirmation client', confirmed:'Confirmée — attente paiement',
+  done_artisan:'Terminé — attente confirmation client', confirmed:'Confirmée — le client règle',
 };
-
 async function loadMissions() {
   const { data } = await sb.from('missions').select('*')
     .eq('assigned_artisan', S.user.id).in('status', ACTIVE_STATUSES)
@@ -486,7 +677,6 @@ async function loadMissions() {
   S.missions = data || [];
   renderMissions();
 }
-
 async function renderMissions() {
   const wrap = $('activeList');
   if (!S.missions.length) {
@@ -498,6 +688,9 @@ async function renderMissions() {
     const card = document.createElement('div');
     card.className = 'card';
     const client = await getCounterparty(m.client_id);
+    const mapsBtn = (m.lat && m.lng)
+      ? `<a class="btn dark" style="text-decoration:none; margin-bottom:10px" target="_blank" rel="noopener"
+           href="https://www.google.com/maps/dir/?api=1&destination=${m.lat},${m.lng}">🧭 Itinéraire</a>` : '';
     card.innerHTML = `
       <div class="status-line"><span class="dot"></span>${STATUS_FR[m.status] || m.status}</div>
       <div class="meta">
@@ -506,32 +699,61 @@ async function renderMissions() {
       </div>
       <p class="desc">${escapeHtml(m.description)}</p>
       <div class="repere"><b>Point de repère</b>${escapeHtml(m.repere)}</div>
-      ${client ? `<div class="repere"><b>Client</b>${escapeHtml(client.full_name)} · <a href="tel:${client.phone}" style="color:var(--ink);font-weight:800">${client.phone}</a></div>` : ''}
+      ${client ? `<div class="repere"><b>Client</b>${escapeHtml(client.full_name)} · <a href="tel:${client.phone}" style="color:var(--ink);font-weight:700">${client.phone}</a></div>` : ''}
+      ${mapsBtn}
       <div data-actions></div>`;
     wrap.appendChild(card);
     renderActions(card.querySelector('[data-actions]'), m);
   }
 }
-
 function renderActions(zone, m) {
   const act = (action, extra) => doAction(m.id, action, extra);
-  if (m.status === 'assigned')
-    zone.innerHTML = `<div class="row"><button class="btn dark">🚗 Je pars maintenant</button></div>`,
+  if (m.status === 'assigned') {
+    zone.innerHTML = `<div class="row"><button class="btn dark">🚗 Je pars maintenant</button></div>`;
     zone.querySelector('.btn').onclick = () => act('en_route');
-  else if (m.status === 'en_route')
-    zone.innerHTML = `<div class="row"><button class="btn dark">📍 Je suis arrivé</button></div>`,
+  }
+  else if (m.status === 'en_route') {
+    zone.innerHTML = `<div class="row"><button class="btn dark">📍 Je suis arrivé</button></div>`;
     zone.querySelector('.btn').onclick = () => act('arrived');
+  }
   else if (m.status === 'arrived' || m.status === 'quote_pending') {
+    const ranges = S.ranges.filter(r=>r.trade_id===m.trade_id);
     zone.innerHTML = `
+      ${ranges.length ? `<p class="sub" style="margin-top:4px"><b>Repères de prix ${TRADE_LABEL(m.trade_id).toLowerCase()}</b> — touche pour préremplir :</p>
+      <div class="ranges">${ranges.map(r=>`<button data-r="${r.id}"><span>${escapeHtml(r.label)}</span><b>${(r.min_fcfa/1000)}–${(r.max_fcfa/1000)}k</b></button>`).join('')}</div>` : ''}
       <label class="f">Montant du devis (FCFA, main-d’œuvre)</label>
       <input type="number" data-q-amount inputmode="numeric" min="500" step="500" placeholder="ex : 12000">
       <label class="f">Détail des travaux</label>
-      <textarea data-q-details placeholder="ex : Remplacement flexible + joint, reprise fixation colonne"></textarea>
-      <div class="row" style="margin-top:12px">
-        <button class="btn accept">${m.status === 'arrived' ? 'Envoyer le devis' : 'Envoyer un nouveau devis'}</button>
+      <div class="row">
+        <textarea data-q-details placeholder="ex : Remplacement flexible + joint, reprise fixation colonne" style="flex:1"></textarea>
+        <button class="mic" data-q-mic title="Dictée vocale" hidden>🎙</button>
       </div>
-      ${m.status === 'quote_pending' ? '<p style="font-size:.82rem;color:var(--steel);margin-top:8px">Le client a reçu ton devis. Aucuns travaux avant son accord.</p>' : ''}`;
-    zone.querySelector('.btn').onclick = () => {
+      <div class="row" style="margin-top:12px">
+        <button class="btn accent" data-q-send>${m.status === 'arrived' ? 'Envoyer le devis' : 'Envoyer un nouveau devis'}</button>
+      </div>
+      ${m.status === 'quote_pending' ? '<p class="sub" style="margin-top:8px">Le client a reçu ton devis. Aucuns travaux avant son accord.</p>' : ''}`;
+    // Repères de prix → préremplissage
+    zone.querySelectorAll('.ranges button').forEach(b => b.onclick = () => {
+      const r = ranges.find(x=>x.id===+b.dataset.r);
+      zone.querySelector('[data-q-details]').value = r.label;
+      zone.querySelector('[data-q-amount]').placeholder = `entre ${r.min_fcfa} et ${r.max_fcfa}`;
+      zone.querySelector('[data-q-amount]').focus();
+    });
+    // Dictée vocale sur le détail
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const micBtn = zone.querySelector('[data-q-mic]');
+    if (SR && micBtn) {
+      micBtn.hidden = false;
+      const rec = new SR(); rec.lang='fr-FR'; let on=false;
+      micBtn.onclick = () => { if (on) return rec.stop(); on=true; micBtn.classList.add('rec'); rec.start(); };
+      rec.onresult = (e) => {
+        const ta = zone.querySelector('[data-q-details]');
+        ta.value = (ta.value + ' ' + e.results[0][0].transcript).trim();
+      };
+      rec.onend = () => { on=false; micBtn.classList.remove('rec'); };
+      rec.onerror = () => { on=false; micBtn.classList.remove('rec'); };
+    }
+    zone.querySelector('[data-q-send]').onclick = () => {
       const amount = parseInt(zone.querySelector('[data-q-amount]').value, 10);
       const details = zone.querySelector('[data-q-details]').value.trim();
       if (!amount || amount < 500) return toast('Montant de devis invalide');
@@ -539,16 +761,20 @@ function renderActions(zone, m) {
       act('propose_quote', { amount_fcfa: amount, details });
     };
   }
-  else if (m.status === 'in_progress')
+  else if (m.status === 'in_progress') {
     zone.innerHTML = `<p class="money" style="margin-bottom:10px">${fcfa(m.final_amount_fcfa)} <small>· ta part : ${fcfa(m.final_amount_fcfa - m.commission_fcfa)}</small></p>
-      <div class="row"><button class="btn ok">✅ Travaux terminés</button></div>`,
+      <div class="row"><button class="btn ok">✅ Travaux terminés</button></div>`;
     zone.querySelector('.btn').onclick = () => act('done');
-  else
-    zone.innerHTML = `<p style="font-size:.85rem;color:var(--steel)">Rien à faire de ton côté pour le moment.</p>`;
+  }
+  else if (m.status === 'confirmed') {
+    zone.innerHTML = `<p class="sub">💳 Le client règle le solde — dès réception, ta part (${fcfa(m.final_amount_fcfa - m.commission_fcfa)}) part en reversement sous 48 h.</p>`;
+  }
+  else {
+    zone.innerHTML = `<p class="sub">Rien à faire de ton côté pour le moment.</p>`;
+  }
 }
-
 async function doAction(mission_id, action, extra = {}) {
-  const { data: { session } } = await sb.auth.getSession();
+  const { data:{ session } } = await sb.auth.getSession();
   const res = await fetch(`${FN}/mission-action`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
@@ -557,44 +783,49 @@ async function doAction(mission_id, action, extra = {}) {
   const out = await res.json().catch(() => ({}));
   if (!res.ok) return toast(out.error || 'Action impossible');
   await loadMissions();
+  if (action === 'done') { S.details.availability='available'; renderDispoUI('available'); renderDashboard(); }
   const msg = { en_route:'Bonne route 🚗', arrived:'Arrivée enregistrée', propose_quote:'Devis envoyé au client',
     done:'Fin de travaux déclarée — le client confirme' }[action];
   if (msg) toast(msg);
 }
 
-/* Contact client (policy profiles_mission_counterparty requise — patch 02) */
+/* Contact client (policy profiles_mission_counterparty — patch 02) */
 const counterCache = {};
 async function getCounterparty(id) {
   if (counterCache[id] !== undefined) return counterCache[id];
   const { data } = await sb.from('profiles').select('full_name, phone').eq('id', id).maybeSingle();
   counterCache[id] = data || null; return counterCache[id];
 }
-const zoneLabel = (id) => (S.zones.find((z) => z.id === id)?.label) || id;
 
-/* ================= PROFIL ================= */
+/* ================= PROFIL / REVENUS ================= */
 async function loadProfileTab() {
   const d = S.details, p = S.profile;
-  const myTrades = await sb.from('artisan_trades').select('trade_id').eq('profile_id', S.user.id);
-  const myZones = await sb.from('artisan_zones').select('zone_id').eq('profile_id', S.user.id);
+  const [myTrades, myZones, { data: payouts }] = await Promise.all([
+    sb.from('artisan_trades').select('trade_id').eq('profile_id', S.user.id),
+    sb.from('artisan_zones').select('zone_id').eq('profile_id', S.user.id),
+    sb.from('payouts').select('*').eq('artisan_id', S.user.id).order('created_at', { ascending: false }).limit(20),
+  ]);
   $('profileCard').innerHTML = `
-    <h3 style="font-size:1.05rem">${escapeHtml(p.full_name)} ${d.verified_badge ? '· ✔ Vérifié' : ''}</h3>
-    <p style="font-size:.85rem;color:var(--steel);margin:6px 0 10px">${p.phone} · MoMo ${d.momo_number || '—'} ${d.momo_verified ? '✔' : '(à vérifier)'}</p>
+    <div style="display:flex; gap:12px; align-items:center; margin-bottom:10px">
+      ${p.photo_url ? `<img src="${p.photo_url}" alt="" style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid var(--accent)">` : ''}
+      <div>
+        <h3 style="font-size:1.05rem">${escapeHtml(p.full_name)} ${d.verified_badge ? '· ✔ Vérifié' : ''}${d.recommended_badge ? ' · ★' : ''}</h3>
+        <p class="sub">${p.phone} · MoMo ${d.momo_number || '—'} ${d.momo_verified ? '✔' : '(vérification en cours)'}</p>
+      </div>
+    </div>
     <div class="chips">
       ${(myTrades.data || []).map((t) => `<span class="chip sel">${TRADE_LABEL(t.trade_id)}</span>`).join('')}
       ${(myZones.data || []).map((z) => `<span class="chip">${zoneLabel(z.zone_id)}</span>`).join('')}
     </div>`;
-  const { data: payouts } = await sb.from('payouts').select('*')
-    .eq('artisan_id', S.user.id).order('created_at', { ascending: false }).limit(20);
-  const total = (payouts || []).filter((x) => x.status === 'sent')
-    .reduce((s, x) => s + x.amount_fcfa, 0);
+  const total = (payouts || []).filter((x) => x.status === 'sent').reduce((s, x) => s + x.amount_fcfa, 0);
   $('payoutList').innerHTML = `
     <p class="money" style="margin-bottom:10px">${fcfa(total)} <small>reversés au total</small></p>
     ${(payouts || []).map((x) => `
-      <p style="display:flex;justify-content:space-between;padding:8px 0;border-top:1px solid var(--line)">
+      <div class="pl">
         <span>${new Date(x.created_at).toLocaleDateString('fr-FR')}</span>
         <b>${fcfa(x.amount_fcfa)}</b>
         <span style="color:${x.status === 'sent' ? 'var(--ok)' : 'var(--steel)'}">${{ pending:'En attente', sent:'Envoyé', failed:'Échec' }[x.status]}</span>
-      </p>`).join('') || '<p style="color:var(--steel)">Ton premier reversement apparaîtra ici.</p>'}`;
+      </div>`).join('') || '<p class="sub">Ton premier reversement apparaîtra ici.</p>'}`;
 }
 
 /* ================= REALTIME ================= */
@@ -612,12 +843,11 @@ function subscribeRealtime() {
       })
     .on('postgres_changes',
       { event: 'UPDATE', schema: 'public', table: 'missions', filter: `assigned_artisan=eq.${S.user.id}` },
-      () => loadMissions())
+      () => { loadMissions(); renderDashboard(); })
     .subscribe();
 }
 
-/* ================= COMPTE À REBOURS ================= */
-const WINDOW_S = 600;
+/* ================= COMPTE À REBOURS (fenêtres variables) ================= */
 function startCountdown() {
   clearInterval(S.timer);
   S.timer = setInterval(() => {
@@ -625,8 +855,9 @@ function startCountdown() {
     document.querySelectorAll('[data-expires]').forEach((el) => {
       const left = Math.max(0, (new Date(el.dataset.expires) - Date.now()) / 1000);
       if (el.classList.contains('fill')) {
-        el.style.width = (left / WINDOW_S) * 100 + '%';
-        el.classList.toggle('low', left < 120);
+        const total = +el.dataset.total || 600;
+        el.style.width = (left / total) * 100 + '%';
+        el.classList.toggle('low', left < Math.min(120, total * 0.25));
       } else {
         el.textContent = `${Math.floor(left / 60)}:${String(Math.floor(left % 60)).padStart(2, '0')}`;
       }
@@ -642,16 +873,11 @@ function switchTab(tab) {
     b.classList.toggle('active', b.dataset.tab === tab));
   show('scr-' + tab);
   if (tab === 'profile') loadProfileTab();
+  if (tab === 'dash') renderDashboard();
 }
 $('tabs').addEventListener('click', (e) => {
   const b = e.target.closest('button'); if (b) switchTab(b.dataset.tab);
 });
-
-/* ================= UTIL ================= */
-function escapeHtml(s) {
-  return String(s ?? '').replace(/[&<>"']/g, (c) =>
-    ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
-}
 
 boot();
 </script>

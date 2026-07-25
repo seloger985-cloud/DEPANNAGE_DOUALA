@@ -11,7 +11,9 @@
 const { admin } = require('./_lib/supabase');
 const campay = require('./_lib/campay');
 
-const WINDOW_MIN = 10;           // fenêtre de réponse artisan
+// Fenêtre de réponse adaptée à l'urgence client (parcours artisan V1)
+const WINDOW_BY_SLOT = { 'Maintenant': 5, 'Aujourd\u2019hui': 15, 'Cette semaine': 30 };
+const windowFor = (slot) => WINDOW_BY_SLOT[slot] || 15;
 const WAVE_SIZES = [3, 5];       // vague 1, vague 2
 const CONFIRM_TIMEOUT_H = 24;    // auto-confirmation client
 const PAYMENT_POLL_MIN = 5;      // polling paiements sans webhook après N minutes
@@ -28,7 +30,7 @@ exports.handler = async () => {
   // ---------- 2. Vagues de dispatch ----------
   const { data: missions } = await admin
     .from('missions')
-    .select('id, trade_id, zone_id, urgency, created_at')
+    .select('id, trade_id, zone_id, urgency, preferred_slot, created_at')
     .eq('status', 'dispatching');
 
   for (const mission of missions || []) {
@@ -66,7 +68,7 @@ exports.handler = async () => {
       continue;
     }
 
-    const expiresAt = new Date(now.getTime() + WINDOW_MIN * 60000).toISOString();
+    const expiresAt = new Date(now.getTime() + windowFor(mission.preferred_slot) * 60000).toISOString();
     await admin.from('mission_dispatches').insert(
       batch.map((c) => ({
         mission_id: mission.id,
@@ -120,12 +122,12 @@ async function rankCandidates(mission, excludeIds) {
   const { data: eligible } = await admin
     .from('artisan_details')
     .select(`
-      profile_id, is_available, suspended_until,
+      profile_id, availability, suspended_until,
       artisan_trades!inner(trade_id),
       artisan_zones!inner(zone_id)
     `)
     .eq('kyc_status', 'approved')
-    .eq('is_available', true)
+    .eq('availability', 'available')
     .eq('artisan_trades.trade_id', mission.trade_id)
     .eq('artisan_zones.zone_id', mission.zone_id);
 
@@ -161,7 +163,7 @@ async function rankCandidates(mission, excludeIds) {
 async function notifyArtisan(candidate, mission) {
   // v1 : la PWA artisan est abonnée en Realtime à mission_dispatches (insert = notification).
   // Secours SMS : brancher ici le fournisseur SMS retenu (coût à surveiller).
-  // TODO SMS: `Nouvelle mission ${mission.trade_id} à ${mission.zone_id}. Ouvre l'app — 10 min pour accepter.`
+  // TODO SMS: `Nouvelle mission ${mission.trade_id} à ${mission.zone_id}. Ouvre l'app — ${windowFor(mission.preferred_slot)} min pour accepter.`
   console.log('notify artisan', candidate.profile_id, 'mission', mission.id);
 }
 
