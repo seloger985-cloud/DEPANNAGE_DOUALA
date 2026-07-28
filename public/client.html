@@ -561,10 +561,28 @@ $('wBook').onclick = async () => {
   bookAndPay();
 };
 
+/* Le profil doit exister avant l'insert (FK missions.client_id → profiles).
+   Un compte auth créé lors d'un essai interrompu peut ne pas en avoir. */
+async function ensureProfile(){
+  const { data: p } = await sb.from('profiles').select('id').eq('id', S.user.id).maybeSingle();
+  if (p) return true;
+  let name = ($('wName').value || '').trim();
+  if (name.length < 3) {
+    $('wNameZone').hidden = false; $('wName').focus();
+    toast('Dernière étape : votre nom complet');
+    return false;
+  }
+  const { error } = await sb.from('profiles')
+    .insert({ id: S.user.id, role: 'client', full_name: name, phone: S.user.phone });
+  if (error) { toast('Création du profil impossible : ' + error.message); return false; }
+  return true;
+}
+
 async function bookAndPay(){
   const btn = $('wBook'); btn.disabled = true; btn.textContent = 'Création…';
   const d = S.draft;
   try {
+    if (!(await ensureProfile())) return;
     // 1. Photos (après auth — dossier {uid}/)
     const paths = [];
     for (const f of d.files) {
@@ -588,7 +606,8 @@ async function bookAndPay(){
     console.error('Création mission échouée:', e);
     /* Message serveur affiché : un 400 vient presque toujours d'une colonne
        absente (patch SQL non exécuté) — inutile de deviner. */
-    toast(e?.message ? `Création impossible : ${e.message}` : 'Création impossible. Vérifiez votre connexion.');
+    const detail = [e?.message, e?.details, e?.hint].filter(Boolean).join(' — ');
+    toast(detail ? `Création impossible : ${detail}` : 'Création impossible. Vérifiez votre connexion.');
   } finally { btn.disabled = false; renderRecap(); }
 }
 
