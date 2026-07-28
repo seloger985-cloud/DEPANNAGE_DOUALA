@@ -278,10 +278,15 @@
 <div class="toast" id="toast" role="status"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/assets/js/config.js"></script>
 <script>
 /* ================= CONFIG ================= */
-const SUPABASE_URL = 'https://VOTRE-PROJET.supabase.co';   // ← à remplir
-const SUPABASE_ANON_KEY = 'VOTRE_ANON_KEY';                // ← à remplir
+const CFG = window.SLCM_CONFIG || {};
+const SUPABASE_URL = CFG.SUPABASE_URL, SUPABASE_ANON_KEY = CFG.SUPABASE_ANON_KEY;
+if (!SUPABASE_URL || SUPABASE_URL.includes('VOTRE-PROJET')) {
+  document.body.innerHTML = '<p style="padding:32px;font-family:sans-serif">⚙️ Configuration manquante : renseignez <b>/assets/js/config.js</b>.</p>';
+  throw new Error('SLCM_CONFIG absent ou non renseigné');
+}
 const FN = '/.netlify/functions';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
