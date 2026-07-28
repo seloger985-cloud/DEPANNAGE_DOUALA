@@ -17,7 +17,7 @@ exports.handler = async (event) => {
   try { body = JSON.parse(event.body || '{}'); } catch { return json(400, { error: 'JSON invalide' }); }
   const { mission_id, kind, payer_phone } = body;
 
-  if (!mission_id || !['diagnostic_fee', 'balance'].includes(kind))
+  if (!mission_id || !['diagnostic_fee', 'materials', 'balance'].includes(kind))
     return json(400, { error: 'Paramètres invalides' });
   if (!/^237\d{9}$/.test(payer_phone || ''))
     return json(400, { error: 'Numéro invalide (format 2376xxxxxxxx)' });
@@ -35,17 +35,28 @@ exports.handler = async (event) => {
       return json(409, { error: 'Forfait déjà traité pour cette mission' });
     amountFcfa = mission.diagnostic_fee_fcfa;
   } else {
-    // Solde : uniquement après devis accepté et travaux terminés
-    if (!['done_artisan', 'confirmed'].includes(mission.status))
-      return json(409, { error: "Le solde n'est pas encore exigible" });
     const { data: quote } = await admin
-      .from('quotes').select('amount_fcfa')
+      .from('quotes').select('amount_fcfa, labor_fcfa, materials_fcfa')
       .eq('mission_id', mission_id).eq('status', 'accepted')
       .order('created_at', { ascending: false }).limit(1).single();
     if (!quote) return json(409, { error: 'Aucun devis accepté' });
-    amountFcfa = DEDUCT_DIAGNOSTIC
-      ? Math.max(quote.amount_fcfa - mission.diagnostic_fee_fcfa, 0)
-      : quote.amount_fcfa;
+
+    if (kind === 'materials') {
+      /* Avance matériel : payée dès l'acceptation du devis, AVANT l'achat
+         (l'artisan n'avance pas sa trésorerie). Prix coûtant, 0 % commission. */
+      if (mission.status !== 'awaiting_materials')
+        return json(409, { error: "L'avance matériel n'est pas exigible" });
+      amountFcfa = quote.materials_fcfa || 0;
+    } else {
+      /* Solde = main-d'œuvre seule si le matériel a déjà été avancé. */
+      if (!['done_artisan', 'confirmed'].includes(mission.status))
+        return json(409, { error: "Le solde n'est pas encore exigible" });
+      const labor = quote.labor_fcfa ?? quote.amount_fcfa;
+      const materialsPaid = (mission.materials_fcfa || 0) > 0;
+      amountFcfa = materialsPaid ? labor : quote.amount_fcfa;
+      if (DEDUCT_DIAGNOSTIC)
+        amountFcfa = Math.max(amountFcfa - mission.diagnostic_fee_fcfa, 0);
+    }
   }
   if (amountFcfa <= 0) return json(409, { error: 'Montant nul — rien à encaisser' });
 

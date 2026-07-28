@@ -171,7 +171,7 @@ async function renderKyc(){
     c.innerHTML=`
       <div class="row">
         <div class="grow">
-          <b>${esc(d.profiles.full_name)}</b> · <span class="sub">${d.profiles.phone} · MoMo ${d.momo_number||'—'} ${d.momo_verified?'✔':'⚠ non vérifié'}</span><br>
+          <b>${esc(d.profiles.full_name)}</b> · <span class="sub">${d.profiles.phone}<br>MoMo1 ${d.momo_number||'—'} ${d.momo_verified?'✔':'⚠'}${d.momo_number_2?' · MoMo2 '+d.momo_number_2+(d.momo_verified_2?' ✔':' ⚠'):''}</span><br>
           <span class="sub">${(tr.data||[]).map(x=>TRADES[x.trade_id]).join(', ')} — ${(zo.data||[]).map(x=>ZONES[x.zone_id]).join(', ')}</span>
         </div>
         <span class="tag ${{pending:'warn',approved:'ok',rejected:'bad'}[d.kyc_status]}">${d.kyc_status}</span>
@@ -192,10 +192,13 @@ async function renderKyc(){
       act.children[0].onclick=()=>decideKyc(d.profile_id,'approved',c);
       act.children[1].onclick=()=>decideKyc(d.profile_id,'rejected',c);
     } else if(d.kyc_status==='approved'){
-      act.innerHTML=`<button class="btn ghost">${d.momo_verified?'MoMo vérifié ✔':'Marquer MoMo vérifié'}</button>
+      act.innerHTML=`<button class="btn ghost">${d.momo_verified?'MoMo 1 ✔':'Vérifier MoMo 1'}</button>
+        ${d.momo_number_2?`<button class="btn ghost">${d.momo_verified_2?'MoMo 2 ✔':'Vérifier MoMo 2'}</button>`:''}
         <button class="btn ghost">${d.recommended_badge?'★ Recommandé':'Attribuer ★ Recommandé'}</button>`;
-      act.children[0].onclick=async()=>{await sb.from('artisan_details').update({momo_verified:true}).eq('profile_id',d.profile_id);toast('MoMo marqué vérifié');renderKyc();};
-      act.children[1].onclick=async()=>{await sb.from('artisan_details').update({recommended_badge:!d.recommended_badge}).eq('profile_id',d.profile_id);renderKyc();};
+      const btns=[...act.querySelectorAll('.btn')];
+      btns[0].onclick=async()=>{await sb.from('artisan_details').update({momo_verified:!d.momo_verified}).eq('profile_id',d.profile_id);toast('MoMo 1 mis à jour');renderKyc();};
+      if(d.momo_number_2) btns[1].onclick=async()=>{await sb.from('artisan_details').update({momo_verified_2:!d.momo_verified_2}).eq('profile_id',d.profile_id);toast('MoMo 2 mis à jour');renderKyc();};
+      btns[btns.length-1].onclick=async()=>{await sb.from('artisan_details').update({recommended_badge:!d.recommended_badge}).eq('profile_id',d.profile_id);renderKyc();};
     }
   }
 }

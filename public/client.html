@@ -612,11 +612,12 @@ async function bookAndPay(){
 }
 
 /* ================= LISTE ================= */
-const ACTIVE = ['lead_hors_zone','pending_payment','dispatching','dispatch_failed','assigned','en_route','arrived','quote_pending','in_progress','done_artisan','confirmed'];
+const ACTIVE = ['lead_hors_zone','pending_payment','awaiting_materials','dispatching','dispatch_failed','assigned','en_route','arrived','quote_pending','in_progress','done_artisan','confirmed'];
 const DONE = ['paid','closed','quote_refused','cancelled_client','cancelled_artisan'];
 const STATUS_FR = {
   lead_hors_zone:'Demande enregistrée — on vous rappelle',
-  pending_payment:'Forfait à payer', dispatching:'Recherche d’un artisan…',
+  pending_payment:'Forfait à payer',
+  awaiting_materials:'Avance matériel à régler', dispatching:'Recherche d’un artisan…',
   dispatch_failed:'On vous rappelle très vite', assigned:'Artisan trouvé ✔',
   en_route:'Artisan en route', arrived:'Artisan sur place',
   quote_pending:'Devis reçu — à vous de décider', in_progress:'Travaux en cours',
@@ -656,13 +657,14 @@ async function loadMissions() {
 
 /* ================= DÉTAIL & SUIVI ================= */
 /* Timeline avec le devis comme jalon explicite (parcours V1 corrigé) */
-const ORDER = ['pending_payment','dispatching','assigned','en_route','arrived','quote_pending','in_progress','done_artisan','confirmed','paid','closed'];
+const ORDER = ['pending_payment','dispatching','assigned','en_route','arrived','quote_pending','awaiting_materials','in_progress','done_artisan','confirmed','paid','closed'];
 const TL_STEPS = [
   ['pending_payment','Forfait payé'],
   ['dispatching','Artisan trouvé'],
   ['en_route','Artisan sur place'],
   ['arrived','Devis reçu'],
   ['quote_pending','Devis accepté'],
+  ['awaiting_materials','Matériel acheté'],
   ['in_progress','Travaux terminés'],
   ['confirmed','Solde payé'],
 ];
@@ -760,9 +762,15 @@ async function renderClientActions(zone, m) {
       .eq('mission_id', m.id).eq('status','proposed')
       .order('created_at',{ascending:false}).limit(1).maybeSingle();
     if (!q) { zone.innerHTML = '<p class="sub">Devis en préparation…</p>'; return; }
+    const mat = q.materials_fcfa || 0, lab = q.labor_fcfa ?? q.amount_fcfa;
     zone.innerHTML = `
       <div class="quote">
-        <div class="amt">${fcfa(q.amount_fcfa)} <small>main-d’œuvre</small></div>
+        ${mat > 0 ? `<div style="border-bottom:1px solid var(--line); padding-bottom:8px; margin-bottom:8px">
+          <p style="display:flex;justify-content:space-between;font-size:.92rem"><span>Matériel${q.materials_details?' — '+escapeHtml(q.materials_details):''}</span><b>${fcfa(mat)}</b></p>
+          <p class="sub">Prix coûtant, sans commission — justificatif d'achat fourni.</p>
+          <p style="display:flex;justify-content:space-between;font-size:.92rem;margin-top:6px"><span>Main-d'œuvre</span><b>${fcfa(lab)}</b></p>
+        </div>` : ''}
+        <div class="amt">${fcfa(q.amount_fcfa)} <small>${mat > 0 ? 'total' : 'main-d’œuvre'}</small></div>
         <p class="det">${escapeHtml(q.details)}</p>
         <div class="row">
           <button class="btn ghost">Refuser</button>
@@ -780,9 +788,15 @@ async function renderClientActions(zone, m) {
       <p class="sub" style="margin-top:8px">Un problème avec la prestation ? Écrivez-nous avant de confirmer — sans réaction sous 24 h, la mission est confirmée automatiquement.</p>`;
     zone.querySelector('.btn').onclick = () => act(m, 'confirm_done');
   }
+  else if (m.status === 'awaiting_materials') {
+    zone.innerHTML = `<button class="btn accent">Régler l'avance matériel · ${fcfa(m.materials_fcfa)}</button>
+      <p class="sub" style="margin-top:8px">Cette avance permet à l'artisan d'acheter le matériel <b>sans avancer son propre argent</b>. Il vous remettra le justificatif d'achat. La main-d'œuvre sera réglée à la fin.</p>`;
+    zone.querySelector('.btn').onclick = () => pay('materials');
+  }
   else if (m.status === 'confirmed') {
-    zone.innerHTML = `<button class="btn accent">Payer le solde · ${fcfa(m.final_amount_fcfa)}</button>
-      <p class="sub" style="margin-top:8px">Montant du devis que vous avez accepté. Votre facture arrive juste après le paiement.</p>`;
+    const solde = (m.materials_fcfa||0) > 0 ? m.final_amount_fcfa - m.materials_fcfa : m.final_amount_fcfa;
+    zone.innerHTML = `<button class="btn accent">Payer le solde · ${fcfa(solde)}</button>
+      <p class="sub" style="margin-top:8px">${(m.materials_fcfa||0) > 0 ? `Main-d'œuvre uniquement — le matériel (${fcfa(m.materials_fcfa)}) a déjà été réglé.` : 'Montant du devis que vous avez accepté.'} Votre facture arrive juste après le paiement.</p>`;
     zone.querySelector('.btn').onclick = () => pay('balance');
   }
   else if (m.status === 'paid' || m.status === 'closed') {

@@ -36,7 +36,7 @@ exports.handler = async (event) => {
       admin.from('profiles').select('full_name, phone').eq('id', m.client_id).single(),
       admin.from('profiles').select('full_name, phone').eq('id', m.assigned_artisan).single(),
       admin.from('trades').select('label_fr').eq('id', m.trade_id).single(),
-      admin.from('quotes').select('amount_fcfa, details, decided_at')
+      admin.from('quotes').select('amount_fcfa, details, decided_at, materials_fcfa, labor_fcfa, materials_details')
         .eq('mission_id', m.id).eq('status', 'accepted')
         .order('decided_at', { ascending: false }).limit(1).maybeSingle(),
       admin.from('payments').select('kind, amount_fcfa, settled_at')
@@ -99,7 +99,12 @@ exports.handler = async (event) => {
     y += bold ? 8 : 7;
   };
   line('Forfait déplacement & diagnostic', m.diagnostic_fee_fcfa);
-  if (quote) line('Prestation (devis accepté dans l’application)', quote.amount_fcfa);
+  if (quote && (quote.materials_fcfa || 0) > 0) {
+    line(`Matériel${quote.materials_details ? ' — ' + quote.materials_details : ''} (prix coûtant)`, quote.materials_fcfa);
+    line('Main-d’œuvre', quote.labor_fcfa ?? (quote.amount_fcfa - quote.materials_fcfa));
+  } else if (quote) {
+    line('Prestation (devis accepté dans l’application)', quote.amount_fcfa);
+  }
   y += 2; hr();
   pdf.setFillColor(255, 243, 235);
   pdf.rect(MARGIN, y - 4, CONTENT, 12, 'F');

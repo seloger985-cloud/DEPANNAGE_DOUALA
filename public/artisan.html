@@ -224,8 +224,11 @@
       <h2 style="margin-bottom:4px">Tes quartiers</h2>
       <p class="sub">Là où tu peux intervenir vite.</p>
       <div class="chips" id="obZones" style="margin-top:12px"></div>
-      <label class="f" for="obMomo">Numéro Mobile Money (tes reversements)</label>
+      <label class="f" for="obMomo">Numéro Mobile Money principal (tes reversements)</label>
       <input type="tel" id="obMomo" placeholder="6 XX XX XX XX" inputmode="numeric">
+      <label class="f" for="obMomo2">Second numéro — autre réseau (optionnel)</label>
+      <input type="tel" id="obMomo2" placeholder="6 XX XX XX XX" inputmode="numeric">
+      <p class="sub" style="margin-top:8px">Un numéro MTN <b>et</b> un Orange : si le premier réseau bloque, ton argent part sur l'autre.</p>
       <button class="btn accent" id="w2Next" style="margin-top:16px; width:100%">Continuer</button>
     </div>
 
@@ -325,6 +328,7 @@ if (!SUPABASE_URL || SUPABASE_URL.includes('VOTRE-PROJET')) {
   throw new Error('SLCM_CONFIG absent ou non renseigné');
 }
 const FN = '/.netlify/functions';
+let RECEIPT_THRESHOLD = 5000;  /* surchargé par app_settings */
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 /* ================= ÉTAT ================= */
@@ -405,6 +409,8 @@ async function enterApp() {
   renderDispoUI(S.details.availability);
   const { data: ranges } = await sb.from('price_ranges').select('*').eq('is_active', true);
   S.ranges = ranges || [];
+  const { data: st } = await sb.from('app_settings').select('value').eq('key','receipt_threshold_fcfa').maybeSingle();
+  if (st?.value) RECEIPT_THRESHOLD = parseInt(st.value, 10) || 5000;
   await Promise.all([loadDispatches(), loadMissions()]);
   renderDashboard();
   subscribeRealtime();
@@ -498,6 +504,7 @@ $('w3Send').onclick = async () => {
     const { error: e2 } = await sb.from('artisan_details').upsert({
       profile_id: S.user.id, cni_recto_path: rPath, cni_verso_path: vPath,
       momo_number: normPhone($('obMomo').value).replace('+',''),
+      momo_number_2: normPhone($('obMomo2').value) ? normPhone($('obMomo2').value).replace('+','') : null,
       level: S.ob.level, portfolio: pfPaths,
     });
     if (e2) throw e2;
@@ -673,10 +680,11 @@ async function respond(d, response, card) {
 }
 
 /* ================= MISSIONS EN COURS ================= */
-const ACTIVE_STATUSES = ['assigned','en_route','arrived','quote_pending','in_progress','done_artisan','confirmed'];
+const ACTIVE_STATUSES = ['assigned','en_route','arrived','quote_pending','awaiting_materials','in_progress','done_artisan','confirmed'];
 const STATUS_FR = {
   assigned:'Attribuée — préviens ton départ', en_route:'En route', arrived:'Sur place',
-  quote_pending:'Devis envoyé — attente du client', in_progress:'Travaux en cours',
+  quote_pending:'Devis envoyé — attente du client',
+  awaiting_materials:'Le client règle l’avance matériel', in_progress:'Travaux en cours',
   done_artisan:'Terminé — attente confirmation client', confirmed:'Confirmée — le client règle',
 };
 async function loadMissions() {
@@ -744,8 +752,12 @@ function renderActions(zone, m) {
     zone.innerHTML = `
       ${ranges.length ? `<p class="sub" style="margin-top:4px"><b>Repères de prix ${TRADE_LABEL(m.trade_id).toLowerCase()}</b> — touche pour préremplir :</p>
       <div class="ranges">${ranges.map(r=>`<button data-r="${r.id}"><span>${escapeHtml(r.label)}</span><b>${(r.min_fcfa/1000)}–${(r.max_fcfa/1000)}k</b></button>`).join('')}</div>` : ''}
-      <label class="f">Montant du devis (FCFA, main-d’œuvre)</label>
-      <input type="number" data-q-amount inputmode="numeric" min="500" step="500" placeholder="ex : 12000">
+      <label class="f">Matériel à acheter (FCFA — prix coûtant, 0 % de commission)</label>
+      <input type="number" data-q-mat inputmode="numeric" min="0" step="500" placeholder="0 si aucun">
+      <input type="text" data-q-matdet placeholder="Quoi ? ex : flexible + joint" style="margin-top:8px">
+      <label class="f">Ta main-d’œuvre (FCFA)</label>
+      <input type="number" data-q-amount inputmode="numeric" min="500" step="500" placeholder="ex : 5000">
+      <p class="sub" data-q-total style="margin-top:8px"></p>
       <label class="f">Détail des travaux</label>
       <div class="row">
         <textarea data-q-details placeholder="ex : Remplacement flexible + joint, reprise fixation colonne" style="flex:1"></textarea>
@@ -776,18 +788,48 @@ function renderActions(zone, m) {
       rec.onend = () => { on=false; micBtn.classList.remove('rec'); };
       rec.onerror = () => { on=false; micBtn.classList.remove('rec'); };
     }
+    /* Total vivant : le client verra exactement ces deux lignes */
+    const refreshTotal = () => {
+      const lab = parseInt(zone.querySelector('[data-q-amount]').value, 10) || 0;
+      const mat = parseInt(zone.querySelector('[data-q-mat]').value, 10) || 0;
+      zone.querySelector('[data-q-total]').innerHTML = (lab + mat)
+        ? `Total client : <b>${fcfa(lab + mat)}</b>${mat ? ` · dont matériel ${fcfa(mat)} (avancé par le client avant achat)` : ''}`
+        : '';
+    };
+    zone.querySelector('[data-q-amount]').oninput = refreshTotal;
+    zone.querySelector('[data-q-mat]').oninput = refreshTotal;
     zone.querySelector('[data-q-send]').onclick = () => {
-      const amount = parseInt(zone.querySelector('[data-q-amount]').value, 10);
+      const labor = parseInt(zone.querySelector('[data-q-amount]').value, 10);
+      const mat = parseInt(zone.querySelector('[data-q-mat]').value, 10) || 0;
+      const matDet = zone.querySelector('[data-q-matdet]').value.trim();
       const details = zone.querySelector('[data-q-details]').value.trim();
-      if (!amount || amount < 500) return toast('Montant de devis invalide');
+      if (!labor || labor < 500) return toast('Indique ta main-d’œuvre');
+      if (mat > 0 && matDet.length < 5) return toast('Précise le matériel à acheter');
       if (details.length < 10) return toast('Décris les travaux (10 caractères min.)');
-      act('propose_quote', { amount_fcfa: amount, details });
+      act('propose_quote', { labor_fcfa: labor, materials_fcfa: mat, materials_details: matDet, details });
     };
   }
+  else if (m.status === 'awaiting_materials') {
+    zone.innerHTML = `<p class="sub">💳 Le client règle l’avance matériel (${fcfa(m.materials_fcfa)}). Dès réception tu pourras acheter — <b>tu n’avances rien</b>.</p>`;
+  }
   else if (m.status === 'in_progress') {
+    const needReceipt = (m.materials_fcfa || 0) >= RECEIPT_THRESHOLD;
     zone.innerHTML = `<p class="money" style="margin-bottom:10px">${fcfa(m.final_amount_fcfa)} <small>· ta part : ${fcfa(m.final_amount_fcfa - m.commission_fcfa)}</small></p>
-      <div class="row"><button class="btn ok">✅ Travaux terminés</button></div>`;
-    zone.querySelector('.btn').onclick = () => act('done');
+      ${(m.materials_fcfa||0) > 0 ? `<p class="sub" style="margin-bottom:10px">Dont matériel ${fcfa(m.materials_fcfa)} (déjà avancé par le client)</p>` : ''}
+      ${needReceipt ? `<label class="f">Photo du reçu d’achat (obligatoire au-delà de ${fcfa(RECEIPT_THRESHOLD)})</label>
+        <input type="file" data-receipt accept="image/*" capture="environment">` : ''}
+      <div class="row" style="margin-top:12px"><button class="btn ok">✅ Travaux terminés</button></div>`;
+    zone.querySelector('.btn').onclick = async () => {
+      if (needReceipt) {
+        const file = zone.querySelector('[data-receipt]').files[0];
+        if (!file) return toast('Ajoute la photo du reçu d’achat');
+        const path = `${S.user.id}/receipts/${m.id}.jpg`;
+        const { error } = await sb.storage.from('mission-photos').upload(path, file, { upsert: true });
+        if (error) return toast('Envoi du reçu impossible — réessaie');
+        await doAction(m.id, 'upload_receipt', { receipt_path: path });
+      }
+      act('done');
+    };
   }
   else if (m.status === 'confirmed') {
     zone.innerHTML = `<p class="sub">💳 Le client règle le solde — dès réception, ta part (${fcfa(m.final_amount_fcfa - m.commission_fcfa)}) part en reversement sous 48 h.</p>`;
@@ -833,7 +875,7 @@ async function loadProfileTab() {
       ${p.photo_url ? `<img src="${p.photo_url}" alt="" style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid var(--accent)">` : ''}
       <div>
         <h3 style="font-size:1.05rem">${escapeHtml(p.full_name)} ${d.verified_badge ? '· ✔ Vérifié' : ''}${d.recommended_badge ? ' · ★' : ''}</h3>
-        <p class="sub">${p.phone} · MoMo ${d.momo_number || '—'} ${d.momo_verified ? '✔' : '(vérification en cours)'}</p>
+        <p class="sub">${p.phone}<br>MoMo ${d.momo_number || '—'} ${d.momo_verified ? '✔' : '(en vérification)'}${d.momo_number_2 ? '<br>MoMo 2 ' + d.momo_number_2 + (d.momo_verified_2 ? ' ✔' : ' (en vérification)') : ''}</p>
       </div>
     </div>
     <div class="chips">

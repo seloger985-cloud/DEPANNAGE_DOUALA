@@ -25,32 +25,53 @@ exports.handler = async (event) => {
   if (payout.status !== 'pending')
     return json(409, { error: `Payout déjà ${payout.status}` });
 
-  // 2. Numéro MoMo de l'artisan (vérifié au KYC via Holder Info)
+  // 2. Numéros MoMo de l'artisan (patch 10 : jusqu'à 2, vérifiés au KYC)
   const { data: artisan } = await admin
-    .from('artisan_details').select('momo_number, momo_verified')
+    .from('artisan_details')
+    .select('momo_number, momo_verified, momo_number_2, momo_verified_2')
     .eq('profile_id', payout.artisan_id).single();
-  if (!artisan?.momo_number || !/^237\d{9}$/.test(artisan.momo_number))
-    return json(409, { error: 'Numéro MoMo artisan manquant ou invalide' });
-  if (!artisan.momo_verified)
-    return json(409, { error: 'Numéro MoMo non vérifié — bloquer le reversement' });
 
-  // 3. Withdraw CamPay
+  const valid = (n) => /^237\d{9}$/.test(String(n || ''));
+  /* Ordre : numéro forcé par l'admin > principal vérifié > secondaire vérifié.
+     Le second sert de repli réseau (MTN/Orange) si le premier échoue. */
+  const candidates = [];
+  if (body.use_number === 2 && artisan?.momo_verified_2 && valid(artisan.momo_number_2)) {
+    candidates.push(artisan.momo_number_2);
+  } else {
+    if (artisan?.momo_verified && valid(artisan.momo_number)) candidates.push(artisan.momo_number);
+    if (artisan?.momo_verified_2 && valid(artisan.momo_number_2)) candidates.push(artisan.momo_number_2);
+  }
+  if (!candidates.length)
+    return json(409, { error: 'Aucun numéro Mobile Money vérifié pour cet artisan' });
+
+  // 3. Withdraw CamPay — repli automatique sur le second numéro si échec
+  let res = null, lastErr = null, used = null;
+  for (const phone of candidates) {
+    try {
+      res = await campay.withdraw({
+        amountFcfa: payout.amount_fcfa,
+        toPhone: phone,
+        description: `Reversement mission ${payout.mission_id.slice(0, 8)}`,
+        externalReference: candidates.indexOf(phone) === 0 ? payout.id : `${payout.id}-b`,
+      });
+      used = phone;
+      break;
+    } catch (e) {
+      lastErr = e;
+      console.warn('Payout échoué sur', phone, e.campay || e.message);
+    }
+  }
   try {
-    const res = await campay.withdraw({
-      amountFcfa: payout.amount_fcfa,
-      toPhone: artisan.momo_number,
-      description: `Reversement mission ${payout.mission_id.slice(0, 8)}`,
-      externalReference: payout.id,
-    });
+    if (!res) throw lastErr || new Error('Payout impossible');
     await admin.from('payouts')
       .update({ status: 'sent', campay_reference: res.reference, sent_at: new Date().toISOString() })
       .eq('id', payout.id).eq('status', 'pending');
     await admin.from('mission_events')
-      .insert({ mission_id: payout.mission_id, status: 'closed', actor_id: user.id, note: `Payout ${payout.amount_fcfa} FCFA envoyé` });
+      .insert({ mission_id: payout.mission_id, status: 'closed', actor_id: user.id, note: `Payout ${payout.amount_fcfa} FCFA envoyé vers ${used}` });
     await admin.from('missions')
       .update({ status: 'closed', updated_at: new Date().toISOString() })
       .eq('id', payout.mission_id).eq('status', 'paid');
-    return json(200, { ok: true, campay_reference: res.reference });
+    return json(200, { ok: true, campay_reference: res.reference, sent_to: used });
   } catch (e) {
     console.error('CamPay withdraw error', e.campay || e.message);
     await admin.from('payouts')

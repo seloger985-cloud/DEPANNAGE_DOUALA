@@ -84,10 +84,19 @@ exports.handler = async (event) => {
       }
       case 'propose_quote': {
         if (!isArtisan) throw { code: 403, msg: 'Réservé à l’artisan attribué' };
-        const amount = parseInt(body.amount_fcfa, 10);
+        /* Devis en 2 lignes (patch 11) : matériel au coûtant + main-d'œuvre.
+           La commission ne portera QUE sur la main-d'œuvre. */
+        const labor = parseInt(body.labor_fcfa ?? body.amount_fcfa, 10);
+        const materials = parseInt(body.materials_fcfa || 0, 10) || 0;
+        const materialsDetails = String(body.materials_details || '').trim();
+        const amount = labor + materials;
         const details = String(body.details || '').trim();
-        if (!Number.isInteger(amount) || amount <= 0 || amount > 5000000)
-          throw { code: 400, msg: 'Montant de devis invalide' };
+        if (!Number.isInteger(labor) || labor <= 0 || labor > 5000000)
+          throw { code: 400, msg: 'Montant de main-d’œuvre invalide' };
+        if (materials < 0 || materials > 5000000)
+          throw { code: 400, msg: 'Montant du matériel invalide' };
+        if (materials > 0 && materialsDetails.length < 5)
+          throw { code: 400, msg: 'Précise le matériel à acheter' };
         if (details.length < 10)
           throw { code: 400, msg: 'Décris le devis (10 caractères minimum)' };
         if (!['arrived', 'quote_pending'].includes(m.status))
@@ -98,10 +107,26 @@ exports.handler = async (event) => {
           .eq('mission_id', m.id).eq('status', 'proposed');
         await admin.from('quotes').insert({
           mission_id: m.id, artisan_id: user.id, amount_fcfa: amount, details,
+          labor_fcfa: labor, materials_fcfa: materials,
+          materials_details: materialsDetails || null,
         });
         if (m.status === 'arrived') await setStatus('arrived', 'quote_pending', `Devis proposé : ${amount} FCFA`);
         else await admin.from('mission_events')
           .insert({ mission_id: m.id, status: 'quote_pending', actor_id: user.id, note: `Nouveau devis : ${amount} FCFA` });
+        break;
+      }
+      case 'upload_receipt': {
+        if (!isArtisan) throw { code: 403, msg: 'Réservé à l’artisan attribué' };
+        const path = String(body.receipt_path || '').trim();
+        if (!path) throw { code: 400, msg: 'Justificatif manquant' };
+        const { data: q2 } = await admin.from('quotes').select('id')
+          .eq('mission_id', m.id).eq('status', 'accepted')
+          .order('decided_at', { ascending: false }).limit(1).single();
+        if (!q2) throw { code: 409, msg: 'Aucun devis accepté' };
+        await admin.from('quotes')
+          .update({ receipt_path: path, receipt_uploaded_at: now }).eq('id', q2.id);
+        await admin.from('mission_events')
+          .insert({ mission_id: m.id, status: m.status, actor_id: user.id, note: 'Justificatif matériel déposé' });
         break;
       }
       case 'done': {
@@ -129,16 +154,27 @@ exports.handler = async (event) => {
         // Commission calculée SERVEUR à partir du référentiel trades
         const { data: trade } = await admin.from('trades')
           .select('commission_pct, commission_min_fcfa').eq('id', m.trade_id).single();
+        /* Commission sur la MAIN-D'ŒUVRE uniquement : le matériel est
+           refacturé au coûtant, l'artisan n'y marge pas, la plateforme non plus. */
+        const laborBase = quote.labor_fcfa ?? quote.amount_fcfa;
         const commission = Math.max(
-          Math.round((quote.amount_fcfa * Number(trade.commission_pct)) / 100),
+          Math.round((laborBase * Number(trade.commission_pct)) / 100),
           trade.commission_min_fcfa
         );
         await admin.from('quotes')
           .update({ status: 'accepted', decided_at: now }).eq('id', quote.id);
         await admin.from('missions')
-          .update({ final_amount_fcfa: quote.amount_fcfa, commission_fcfa: commission, updated_at: now })
+          .update({ final_amount_fcfa: quote.amount_fcfa, commission_fcfa: commission,
+                    materials_fcfa: quote.materials_fcfa || 0, updated_at: now })
           .eq('id', m.id);
-        await setStatus('quote_pending', 'in_progress', `Devis accepté : ${quote.amount_fcfa} FCFA (commission ${commission})`);
+        /* Avance matériel (option B) : le client la règle avant l'achat,
+           l'artisan n'avance jamais sa trésorerie. */
+        if ((quote.materials_fcfa || 0) > 0) {
+          await setStatus('quote_pending', 'awaiting_materials',
+            `Devis accepté : ${quote.amount_fcfa} FCFA (matériel ${quote.materials_fcfa}, main-d’œuvre ${laborBase}, commission ${commission})`);
+        } else {
+          await setStatus('quote_pending', 'in_progress', `Devis accepté : ${quote.amount_fcfa} FCFA (commission ${commission})`);
+        }
         break;
       }
       case 'refuse_quote': {

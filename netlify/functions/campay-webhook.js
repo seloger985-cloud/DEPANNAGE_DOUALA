@@ -51,7 +51,14 @@ exports.handler = async (event) => {
 
   // 5. Effets métier
   if (newStatus === 'successful') {
-    if (payment.kind === 'diagnostic_fee') {
+    if (payment.kind === 'materials') {
+      /* Avance matériel encaissée → l'artisan peut acheter et travailler */
+      await admin.from('missions')
+        .update({ status: 'in_progress', updated_at: new Date().toISOString() })
+        .eq('id', payment.mission_id).eq('status', 'awaiting_materials');
+      await admin.from('mission_events')
+        .insert({ mission_id: payment.mission_id, status: 'in_progress', note: 'Avance matériel encaissée' });
+    } else if (payment.kind === 'diagnostic_fee') {
       // Forfait payé → la mission part en dispatch (ramassée par run-dispatch < 1 min)
       await admin.from('missions')
         .update({ status: 'dispatching', updated_at: new Date().toISOString() })
@@ -68,6 +75,8 @@ exports.handler = async (event) => {
         .eq('id', mission.id);
       await admin.from('mission_events')
         .insert({ mission_id: mission.id, status: 'paid', note: 'Solde encaissé' });
+      /* Part artisan : total facturé − commission (calculée sur la seule
+         main-d'œuvre). Le matériel lui revient intégralement au coûtant. */
       const net = mission.final_amount_fcfa - mission.commission_fcfa;
       await admin.from('payouts').insert({
         mission_id: mission.id,
