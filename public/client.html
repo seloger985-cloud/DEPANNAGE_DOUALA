@@ -235,7 +235,7 @@
     <div class="card" data-step="5" hidden>
       <h2 style="margin-bottom:8px">Réservation</h2>
       <div class="recap" id="wRecap"></div>
-      <div class="fee-box">
+      <div class="fee-box" id="feeBox">
         Déplacement &amp; diagnostic : <span class="amt" id="wFee">1 000 FCFA</span><br>
         Ce montant paie le déplacement de l’artisan et son diagnostic sur place.
         Les travaux font l’objet d’un devis séparé — <b style="color:var(--accent)">rien ne se fait sans votre accord</b>.
@@ -585,7 +585,10 @@ async function bookAndPay(){
     await loadMissions();
     openDetail(mission.id);   // le détail affiche « Payer le forfait »
   } catch (e) {
-    console.error(e); toast('Création impossible. Vérifiez votre connexion.');
+    console.error('Création mission échouée:', e);
+    /* Message serveur affiché : un 400 vient presque toujours d'une colonne
+       absente (patch SQL non exécuté) — inutile de deviner. */
+    toast(e?.message ? `Création impossible : ${e.message}` : 'Création impossible. Vérifiez votre connexion.');
   } finally { btn.disabled = false; renderRecap(); }
 }
 
