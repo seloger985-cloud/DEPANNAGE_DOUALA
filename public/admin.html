@@ -64,6 +64,7 @@
   <button data-t="missions">Missions <span class="n" id="nFail" hidden></span></button>
   <button data-t="payouts">Reversements <span class="n" id="nPay" hidden></span></button>
   <button data-t="reviews">Avis</button>
+  <button data-t="expansion">Expansion <span class="n" id="nLead" hidden></span></button>
 </nav>
 <main id="main" hidden></main>
 <div class="toast" id="toast"></div>
@@ -94,7 +95,32 @@ $('btnAuth').onclick = async () => {
   } else {
     const {error}=await sb.auth.verifyOtp({phone:otpPhone,token:$('otp').value.trim(),type:'sms'});
     if(error) return toast('Code incorrect');
-    boot();
+    async function renderExpansion(){
+  const m=$('main'); m.innerHTML='<h2 style="margin:10px 0">Expansion — demandes hors zone</h2>'+
+    '<p class="sub" style="margin-bottom:12px">Où recruter ensuite : les quartiers que les clients réclament déjà.</p>';
+  const {data:agg}=await sb.from('leads_hors_zone').select('*');
+  if(!agg?.length) return m.insertAdjacentHTML('beforeend','<div class="empty">Aucune demande hors zone pour l’instant.</div>');
+  m.insertAdjacentHTML('beforeend',`<div class="card" style="overflow-x:auto"><table>
+    <tr><th>Quartier demandé</th><th>30 j</th><th>Total</th><th>Métiers</th><th>Dernière</th></tr>
+    ${agg.map(r=>`<tr><td><b>${esc(r.quartier)}</b></td><td>${r.demandes_30j}</td><td>${r.demandes}</td>
+      <td class="sub">${(r.metiers||[]).map(t=>TRADES[t]||t).join(', ')}</td>
+      <td class="sub">${new Date(r.derniere).toLocaleDateString('fr-FR')}</td></tr>`).join('')}</table></div>`);
+  const {data:leads}=await sb.from('missions').select('*').eq('status','lead_hors_zone')
+    .order('created_at',{ascending:false}).limit(30);
+  m.insertAdjacentHTML('beforeend','<h3 style="margin:14px 0 8px; font-size:1rem">À rappeler</h3>');
+  for(const x of (leads||[])){
+    const {data:c}=await sb.from('profiles').select('full_name,phone').eq('id',x.client_id).maybeSingle();
+    m.insertAdjacentHTML('beforeend',`<div class="card"><div class="row">
+      <div class="grow"><b>${esc(x.zone_libre||'—')}</b> · ${TRADES[x.trade_id]||x.trade_id}
+        <p class="sub">${esc(x.description).slice(0,90)}</p>
+        <p class="sub">${c?esc(c.full_name)+' · '+c.phone:''} · ${new Date(x.created_at).toLocaleDateString('fr-FR')}</p></div>
+      ${c?`<a class="btn accent" style="text-decoration:none" href="https://wa.me/${c.phone.replace('+','')}" target="_blank" rel="noopener">WhatsApp</a>`:''}
+      ${x.lat?`<a class="btn ghost" style="text-decoration:none" href="https://www.google.com/maps?q=${x.lat},${x.lng}" target="_blank" rel="noopener">📍</a>`:''}
+    </div></div>`);
+  }
+}
+
+boot();
   }
 };
 $('btnOut').onclick=async()=>{await sb.auth.signOut();location.reload();};
@@ -114,16 +140,17 @@ $('nav').onclick=(e)=>{const b=e.target.closest('button');if(!b)return;
   TAB=b.dataset.t; document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b)); render();};
 
 async function refreshBadges(){
-  const [{count:k},{count:f},{count:p}]=await Promise.all([
+  const [{count:k},{count:f},{count:p},{count:l}]=await Promise.all([
     sb.from('artisan_details').select('*',{count:'exact',head:true}).eq('kyc_status','pending'),
     sb.from('missions').select('*',{count:'exact',head:true}).eq('status','dispatch_failed'),
     sb.from('payouts').select('*',{count:'exact',head:true}).eq('status','pending'),
+    sb.from('missions').select('*',{count:'exact',head:true}).eq('status','lead_hors_zone'),
   ]);
   const set=(id,n)=>{$(id).hidden=!n;$(id).textContent=n;};
-  set('nKyc',k);set('nFail',f);set('nPay',p);
+  set('nKyc',k);set('nFail',f);set('nPay',p);set('nLead',l);
 }
 
-function render(){ ({kyc:renderKyc,missions:renderMissions,payouts:renderPayouts,reviews:renderReviews})[TAB](); }
+function render(){ ({kyc:renderKyc,missions:renderMissions,payouts:renderPayouts,reviews:renderReviews,expansion:renderExpansion})[TAB](); }
 
 /* ---------- KYC ---------- */
 async function renderKyc(){
@@ -240,6 +267,31 @@ async function renderReviews(){
       renderReviews();
     };
     m.appendChild(c);
+  }
+}
+
+async function renderExpansion(){
+  const m=$('main'); m.innerHTML='<h2 style="margin:10px 0">Expansion — demandes hors zone</h2>'+
+    '<p class="sub" style="margin-bottom:12px">Où recruter ensuite : les quartiers que les clients réclament déjà.</p>';
+  const {data:agg}=await sb.from('leads_hors_zone').select('*');
+  if(!agg?.length) return m.insertAdjacentHTML('beforeend','<div class="empty">Aucune demande hors zone pour l’instant.</div>');
+  m.insertAdjacentHTML('beforeend',`<div class="card" style="overflow-x:auto"><table>
+    <tr><th>Quartier demandé</th><th>30 j</th><th>Total</th><th>Métiers</th><th>Dernière</th></tr>
+    ${agg.map(r=>`<tr><td><b>${esc(r.quartier)}</b></td><td>${r.demandes_30j}</td><td>${r.demandes}</td>
+      <td class="sub">${(r.metiers||[]).map(t=>TRADES[t]||t).join(', ')}</td>
+      <td class="sub">${new Date(r.derniere).toLocaleDateString('fr-FR')}</td></tr>`).join('')}</table></div>`);
+  const {data:leads}=await sb.from('missions').select('*').eq('status','lead_hors_zone')
+    .order('created_at',{ascending:false}).limit(30);
+  m.insertAdjacentHTML('beforeend','<h3 style="margin:14px 0 8px; font-size:1rem">À rappeler</h3>');
+  for(const x of (leads||[])){
+    const {data:c}=await sb.from('profiles').select('full_name,phone').eq('id',x.client_id).maybeSingle();
+    m.insertAdjacentHTML('beforeend',`<div class="card"><div class="row">
+      <div class="grow"><b>${esc(x.zone_libre||'—')}</b> · ${TRADES[x.trade_id]||x.trade_id}
+        <p class="sub">${esc(x.description).slice(0,90)}</p>
+        <p class="sub">${c?esc(c.full_name)+' · '+c.phone:''} · ${new Date(x.created_at).toLocaleDateString('fr-FR')}</p></div>
+      ${c?`<a class="btn accent" style="text-decoration:none" href="https://wa.me/${c.phone.replace('+','')}" target="_blank" rel="noopener">WhatsApp</a>`:''}
+      ${x.lat?`<a class="btn ghost" style="text-decoration:none" href="https://www.google.com/maps?q=${x.lat},${x.lng}" target="_blank" rel="noopener">📍</a>`:''}
+    </div></div>`);
   }
 }
 
