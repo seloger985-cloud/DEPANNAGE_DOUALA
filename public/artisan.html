@@ -371,7 +371,7 @@ async function boot() {
   const { data:{ user } } = await sb.auth.getUser();
   const [{ data: trades }, { data: zones }] = await Promise.all([
     sb.from('trades').select('*').eq('is_active', true),
-    sb.from('zones').select('*').eq('is_active', true),
+    sb.from('zones').select('*').eq('is_active', true).order('sort_order'),
   ]);
   S.trades = trades || []; S.zones = zones || [];
   if (!user) return show('scr-landing');
@@ -412,7 +412,11 @@ const OB_STEPS = 4;
 function startWizard(){
   S.step = 0;
   $('obTrades').innerHTML = S.trades.map(t=>`<button type="button" class="chip" data-id="${t.id}">${t.label_fr}</button>`).join('');
-  $('obZones').innerHTML = S.zones.map(z=>`<button type="button" class="chip" data-id="${z.id}">${z.label}</button>`).join('');
+  const gz = {};
+  S.zones.forEach(z => { (gz[z.arrondissement || 'Douala'] ||= []).push(z); });
+  $('obZones').innerHTML = Object.entries(gz).map(([g, list]) =>
+    `<div style="width:100%"><p class="sub" style="margin:8px 0 6px; font-weight:700">${escapeHtml(g)}</p>
+     <div class="chips">${list.map(z=>`<button type="button" class="chip" data-id="${z.id}">${escapeHtml(z.label)}</button>`).join('')}</div></div>`).join('');
   renderObStep(); show('scr-wizard');
 }
 function renderObStep(){

@@ -55,6 +55,11 @@
 
   label.f{display:block; font-size:.78rem; font-weight:700; text-transform:uppercase;
     letter-spacing:.06em; color:var(--steel); margin:14px 0 6px}
+  select{width:100%; padding:14px; border:1px solid var(--line); border-radius:12px;
+    font-family:inherit; font-size:1rem; background:#fff; color:var(--ink); appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%235A6472'><path d='M7 10l5 5 5-5z'/></svg>");
+    background-repeat:no-repeat; background-position:right 12px center}
+  select:focus{outline:3px solid var(--accent); border-color:var(--accent)}
   input[type=text],input[type=tel],textarea{width:100%; padding:14px; border:1px solid var(--line);
     border-radius:12px; font-family:inherit; font-size:1rem; background:#fff; color:var(--ink)}
   textarea{min-height:100px; resize:vertical}
@@ -203,8 +208,13 @@
     <!-- Étape 3 : localisation -->
     <div class="card" data-step="3" hidden>
       <h2 style="margin-bottom:4px">Où êtes-vous ?</h2>
-      <label class="f">Votre quartier</label>
-      <div class="chips" id="wZones"></div>
+      <label class="f" for="wZoneSel">Votre quartier</label>
+      <select id="wZoneSel"></select>
+      <div id="wZoneLibreWrap" hidden>
+        <label class="f" for="wZoneLibre">Nom de votre quartier</label>
+        <input type="text" id="wZoneLibre" placeholder="Ex : Ndogbong, Bonabéri, Yassa…">
+        <p class="sub" style="margin-top:8px">Ce quartier n'est pas encore couvert par nos artisans. Laissez-nous votre demande : <b>nous vous rappelons</b> pour organiser l'intervention. Aucun paiement maintenant.</p>
+      </div>
       <label class="f" for="wRepere">Point de repère précis</label>
       <input type="text" id="wRepere" placeholder="Ex : rue Njo-Njo, immeuble bleu après la pharmacie, 2ᵉ étage">
       <div class="gps" id="wGps">📍 <span>Position GPS : autorisez-la pour guider l’artisan (optionnel)</span></div>
@@ -278,7 +288,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 /* ================= ÉTAT ================= */
 const S = {
   user:null, trades:[], zones:[], missions:[], current:null, channel:null, poll:null,
-  draft:{ description:'', summary:'', files:[], aiTrades:[], trade:null, zone:null, repere:'', lat:null, lng:null, urgency:null },
+  draft:{ description:'', summary:'', files:[], aiTrades:[], zoneLibre:'', trade:null, zone:null, repere:'', lat:null, lng:null, urgency:null },
   step:0, otpPhone:null, needName:false,
 };
 const $ = (id) => document.getElementById(id);
@@ -298,7 +308,7 @@ const URGENCY_LABEL = { now:'Maintenant', today:'Aujourd’hui', week:'Cette sem
 async function boot() {
   const [{ data: trades }, { data: zones }] = await Promise.all([
     sb.from('trades').select('*').eq('is_active', true),
-    sb.from('zones').select('*').eq('is_active', true),
+    sb.from('zones').select('*').eq('is_active', true).order('sort_order'),
   ]);
   S.trades = trades || []; S.zones = zones || [];
 
@@ -322,7 +332,7 @@ $('btnNew').onclick = startWizard;
 /* ================= WIZARD ================= */
 const STEP_COUNT = 6;
 function startWizard(){
-  S.draft = { description:'', summary:'', files:[], aiTrades:[], trade:null, zone:null, repere:'', lat:null, lng:null, urgency:null };
+  S.draft = { description:'', summary:'', files:[], aiTrades:[], zoneLibre:'', trade:null, zone:null, repere:'', lat:null, lng:null, urgency:null };
   S.step = 0; S.otpPhone = null;
   $('wDesc').value=''; $('wPhotos').value=''; $('wRepere').value='';
   $('wOtpZone').hidden = true; $('wNameZone').hidden = true;
@@ -439,7 +449,11 @@ $('wTrades').onclick = (e) => {
 };
 $('wTradeNext').onclick = () => {
   S.step = 3; renderStep();
-  $('wZones').innerHTML = S.zones.map(z=>`<button type="button" class="chip ${S.draft.zone===z.id?'sel':''}" data-id="${z.id}">${z.label}</button>`).join('');
+  const groups = {};
+  S.zones.forEach(z => { (groups[z.arrondissement || 'Douala'] ||= []).push(z); });
+  $('wZoneSel').innerHTML = '<option value="">— Choisissez votre quartier —</option>' +
+    Object.entries(groups).map(([g, list]) =>
+      `<optgroup label="${escapeHtml(g)}">${list.map(z=>`<option value="${z.id}"${S.draft.zone===z.id?' selected':''}>${escapeHtml(z.label)}</option>`).join('')}</optgroup>`).join('');
   askGps();
 };
 
@@ -455,13 +469,17 @@ function askGps(){
     () => {}, { enableHighAccuracy: true, timeout: 8000 }
   );
 }
-$('wZones').onclick = (e) => {
-  const b = e.target.closest('.chip'); if (!b) return;
-  S.draft.zone = b.dataset.id;
-  $('wZones').querySelectorAll('.chip').forEach(x=>x.classList.toggle('sel', x===b));
+$('wZoneSel').onchange = (e) => {
+  S.draft.zone = e.target.value || null;
+  $('wZoneLibreWrap').hidden = S.draft.zone !== 'autre';
 };
 $('wLocNext').onclick = () => {
   if (!S.draft.zone) return toast('Choisissez votre quartier');
+  if (S.draft.zone === 'autre') {
+    const zl = $('wZoneLibre').value.trim();
+    if (zl.length < 3) return toast('Indiquez le nom de votre quartier');
+    S.draft.zoneLibre = zl;
+  }
   const rep = $('wRepere').value.trim();
   if (rep.length < 5) return toast('Le point de repère aide l’artisan à vous trouver');
   S.draft.repere = rep;
@@ -478,15 +496,20 @@ $('wUrgency').onclick = (e) => {
 /* ---- Étape 5 : récap + auth + paiement ---- */
 function renderRecap(){
   const d = S.draft, t = TRADE(d.trade);
+  const oldLead = $('leadBox'); if (oldLead) oldLead.remove();
   $('wFee').textContent = fcfa(t.diagnostic_fee_fcfa);
   $('wRecap').innerHTML = `
     <p><span>Métier</span><b>${TRADE_LABEL(d.trade)}</b></p>
-    <p><span>Quartier</span><b>${zoneLabel(d.zone)}</b></p>
+    <p><span>Quartier</span><b>${d.zone === 'autre' ? escapeHtml(d.zoneLibre) + ' (hors zone)' : zoneLabel(d.zone)}</b></p>
     <p><span>Quand</span><b>${URGENCY_LABEL[d.urgency]}</b></p>
     <p><span>Photos</span><b>${d.files.length || 'aucune'}</b></p>`;
+  const lead = d.zone === 'autre';
+  $('feeBox').hidden = lead;
+  if (lead) $('wRecap').insertAdjacentHTML('afterend',
+    '<div class="fee-box" id="leadBox">📍 <b style="color:var(--accent)">Quartier hors zone couverte</b><br>Nous enregistrons votre demande et vous rappelons rapidement. <b style="color:var(--accent)">Aucun paiement</b> à cette étape.</div>');
   if (S.user) {
     $('wAuth').hidden = true;
-    $('wBook').textContent = `Réserver · payer ${fcfa(t.diagnostic_fee_fcfa)}`;
+    $('wBook').textContent = lead ? 'Envoyer ma demande' : `Réserver · payer ${fcfa(t.diagnostic_fee_fcfa)}`;
   } else {
     $('wAuth').hidden = false;
     $('wBook').textContent = S.otpPhone ? 'Valider le code' : 'Recevoir mon code';
@@ -550,7 +573,7 @@ async function bookAndPay(){
       repere: d.repere, description: (d.summary || d.description), photos: paths,
       urgency: d.urgency === 'now',
       preferred_slot: URGENCY_LABEL[d.urgency],
-      lat: d.lat, lng: d.lng,
+      lat: d.lat, lng: d.lng, zone_libre: d.zoneLibre || null,
       diagnostic_fee_fcfa: 0,
     }).select().single();
     if (error) throw error;
@@ -562,9 +585,10 @@ async function bookAndPay(){
 }
 
 /* ================= LISTE ================= */
-const ACTIVE = ['pending_payment','dispatching','dispatch_failed','assigned','en_route','arrived','quote_pending','in_progress','done_artisan','confirmed'];
+const ACTIVE = ['lead_hors_zone','pending_payment','dispatching','dispatch_failed','assigned','en_route','arrived','quote_pending','in_progress','done_artisan','confirmed'];
 const DONE = ['paid','closed','quote_refused','cancelled_client','cancelled_artisan'];
 const STATUS_FR = {
+  lead_hors_zone:'Demande enregistrée — on vous rappelle',
   pending_payment:'Forfait à payer', dispatching:'Recherche d’un artisan…',
   dispatch_failed:'On vous rappelle très vite', assigned:'Artisan trouvé ✔',
   en_route:'Artisan en route', arrived:'Artisan sur place',
@@ -682,7 +706,12 @@ async function renderClientActions(zone, m) {
     startPolling(m.id);
   };
 
-  if (m.status === 'pending_payment') {
+  if (m.status === 'lead_hors_zone') {
+    zone.innerHTML = `<div class="paywait"><div class="big">📍</div>
+      <p style="font-weight:700">Demande bien reçue</p>
+      <p class="sub">Votre quartier n'est pas encore couvert par nos artisans. Notre équipe vous rappelle pour organiser l'intervention. Aucun paiement n'a été effectué.</p></div>`;
+  }
+  else if (m.status === 'pending_payment') {
     zone.innerHTML = `<button class="btn accent">Payer le forfait · ${fcfa(m.diagnostic_fee_fcfa)}</button>
       <button class="btn danger-line" style="margin-top:8px">Annuler la demande</button>`;
     zone.children[0].onclick = () => pay('diagnostic_fee');
