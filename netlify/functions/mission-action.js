@@ -62,7 +62,24 @@ exports.handler = async (event) => {
       }
       case 'arrived': {
         if (!isArtisan) throw { code: 403, msg: 'Réservé à l’artisan attribué' };
-        await setStatus('en_route', 'arrived', 'Artisan arrivé');
+        /* Code d'arrivée : preuve de présence physique (patch 07).
+           Le code est lu chez le client ; l'artisan n'y a aucun accès en base. */
+        const { data: ac } = await admin.from('mission_arrival_codes')
+          .select('code').eq('mission_id', m.id).maybeSingle();
+        const given = String(body.arrival_code || '').replace(/\D/g, '');
+        const skipped = body.code_unavailable === true;
+        let verified = null;
+        if (!skipped) {
+          if (!ac?.code) throw { code: 409, msg: 'Code indisponible pour cette mission' };
+          if (given !== ac.code) throw { code: 400, msg: 'Code incorrect — demande-le au client' };
+          verified = true;
+        } else {
+          verified = false;  /* voie de secours : jamais bloquante, remontée en admin */
+        }
+        await admin.from('missions')
+          .update({ arrived_at: now, arrival_verified: verified }).eq('id', m.id);
+        await setStatus('en_route', 'arrived',
+          verified ? 'Arrivée confirmée par code client' : 'Arrivée déclarée sans code (à vérifier)');
         break;
       }
       case 'propose_quote': {

@@ -181,17 +181,27 @@
       <button class="btn accent" id="wDescNext" style="margin-top:16px">Continuer</button>
     </div>
 
-    <!-- Étape 2 : métier -->
+
+    <!-- Étape 2 : valider la reformulation (IA) -->
     <div class="card" data-step="1" hidden>
-      <h2 style="margin-bottom:4px">Le bon professionnel</h2>
+      <h2 style="margin-bottom:4px">Est-ce bien cela ?</h2>
+      <p class="sub">Corrigez si besoin — c'est ce résumé qui guidera le choix du professionnel.</p>
       <div class="ai-box" id="wReform" hidden></div>
+      <label class="f" for="wReformEdit">Le problème, en résumé</label>
+      <textarea id="wReformEdit"></textarea>
+      <button class="btn accent" id="wReformNext" style="margin-top:16px">C'est bien ça, continuer</button>
+      <p class="sub" style="margin-top:10px; text-align:center" id="wReformNote"></p>
+    </div>
+    <!-- Étape 2 : métier -->
+    <div class="card" data-step="2" hidden>
+      <h2 style="margin-bottom:4px">Le bon professionnel</h2>
       <p class="sub" id="wTradeHint">Confirmez le métier recommandé :</p>
       <div class="chips" id="wTrades" style="margin-top:12px"></div>
       <button class="btn accent" id="wTradeNext" style="margin-top:16px" disabled>Continuer</button>
     </div>
 
     <!-- Étape 3 : localisation -->
-    <div class="card" data-step="2" hidden>
+    <div class="card" data-step="3" hidden>
       <h2 style="margin-bottom:4px">Où êtes-vous ?</h2>
       <label class="f">Votre quartier</label>
       <div class="chips" id="wZones"></div>
@@ -202,7 +212,7 @@
     </div>
 
     <!-- Étape 4 : urgence -->
-    <div class="card" data-step="3" hidden>
+    <div class="card" data-step="4" hidden>
       <h2 style="margin-bottom:10px">C’est pour quand ?</h2>
       <div class="chips" id="wUrgency">
         <button type="button" class="chip big" data-u="now">🚨 <b>Maintenant</b> — c’est urgent</button>
@@ -212,7 +222,7 @@
     </div>
 
     <!-- Étape 5 : réservation (auth + forfait) -->
-    <div class="card" data-step="4" hidden>
+    <div class="card" data-step="5" hidden>
       <h2 style="margin-bottom:8px">Réservation</h2>
       <div class="recap" id="wRecap"></div>
       <div class="fee-box">
@@ -260,15 +270,15 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 /* ================= CONFIG ================= */
-const SUPABASE_URL = 'https://krqzvlcqorqiqwxkkvqw.supabase.co';   // ← à remplir
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtycXp2bGNxb3JxaXF3eGtrdnF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ2NzAyMDQsImV4cCI6MjEwMDI0NjIwNH0.-89kluSbySWqZggmr_dXpHeP70lyrFxof40P-6Kfgrs';                // ← à remplir
+const SUPABASE_URL = 'https://VOTRE-PROJET.supabase.co';   // ← à remplir
+const SUPABASE_ANON_KEY = 'VOTRE_ANON_KEY';                // ← à remplir
 const FN = '/.netlify/functions';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 /* ================= ÉTAT ================= */
 const S = {
   user:null, trades:[], zones:[], missions:[], current:null, channel:null, poll:null,
-  draft:{ description:'', files:[], trade:null, zone:null, repere:'', lat:null, lng:null, urgency:null },
+  draft:{ description:'', summary:'', files:[], aiTrades:[], trade:null, zone:null, repere:'', lat:null, lng:null, urgency:null },
   step:0, otpPhone:null, needName:false,
 };
 const $ = (id) => document.getElementById(id);
@@ -310,9 +320,9 @@ $('btnStart').onclick = startWizard;
 $('btnNew').onclick = startWizard;
 
 /* ================= WIZARD ================= */
-const STEP_COUNT = 5;
+const STEP_COUNT = 6;
 function startWizard(){
-  S.draft = { description:'', files:[], trade:null, zone:null, repere:'', lat:null, lng:null, urgency:null };
+  S.draft = { description:'', summary:'', files:[], aiTrades:[], trade:null, zone:null, repere:'', lat:null, lng:null, urgency:null };
   S.step = 0; S.otpPhone = null;
   $('wDesc').value=''; $('wPhotos').value=''; $('wRepere').value='';
   $('wOtpZone').hidden = true; $('wNameZone').hidden = true;
@@ -352,29 +362,69 @@ $('wDescNext').onclick = async () => {
   S.draft.description = desc;
   S.draft.files = [...$('wPhotos').files].slice(0, 4);
   S.step = 1; renderStep();
-  // Qualification IA (jamais bloquante)
+  await runAI(desc);
+};
+
+/* Qualification IA — jamais bloquante : en cas d'échec, le client valide
+   son propre texte et choisit le métier manuellement. */
+async function runAI(text){
   $('wReform').hidden = true;
-  $('wTradeHint').textContent = 'Analyse de votre demande…';
-  renderTradeChips(S.trades.map(t=>t.id), null);
+  $('wReformEdit').value = text;
+  $('wReformNote').textContent = 'Analyse de votre demande…';
+  S.draft.aiTrades = [];
   try {
     const res = await fetch(`${FN}/suggest-trade`, {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ description: desc }),
+      body: JSON.stringify({ description: text }),
     });
     const out = await res.json();
     if (out.reformulation) {
       $('wReform').innerHTML = `<b>Notre compréhension :</b> ${escapeHtml(out.reformulation)}`;
       $('wReform').hidden = false;
-    }
-    if (out.trades?.length) {
-      $('wTradeHint').textContent = out.trades.length > 1
-        ? 'Plusieurs métiers peuvent convenir — confirmez :' : 'Confirmez le métier recommandé :';
-      renderTradeChips(out.trades.concat(S.trades.map(t=>t.id).filter(id=>!out.trades.includes(id))), out.trades[0]);
+      $('wReformEdit').value = out.reformulation;
+      $('wReformNote').textContent = 'Vous pouvez modifier ce résumé avant de continuer.';
     } else {
-      $('wTradeHint').textContent = 'Choisissez le métier :';
+      $('wReformNote').textContent = 'Relisez votre description avant de continuer.';
     }
-  } catch { $('wTradeHint').textContent = 'Choisissez le métier :'; }
+    S.draft.aiTrades = out.trades || [];
+  } catch {
+    $('wReformNote').textContent = 'Relisez votre description avant de continuer.';
+  }
+}
+
+/* Validation du résumé → l'écran métier découle de CE texte validé.
+   Si le client l'a modifié, on relance l'IA dessus pour que la
+   recommandation corresponde vraiment au problème décrit. */
+$('wReformNext').onclick = async () => {
+  const summary = $('wReformEdit').value.trim();
+  if (summary.length < 10) return toast('Le résumé est trop court');
+  const edited = summary !== ($('wReformEdit').defaultValue || '') && summary !== S.draft.description;
+  if (edited && !S.draft.aiTrades.length) { /* rien à réutiliser */ }
+  if (summary !== ($('wReform').textContent || '').replace('Notre compréhension : ', '').trim()) {
+    $('wReformNext').disabled = true;
+    try {
+      const res = await fetch(`${FN}/suggest-trade`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ description: summary }),
+      });
+      const out = await res.json();
+      if (out.trades?.length) S.draft.aiTrades = out.trades;
+    } catch {}
+    $('wReformNext').disabled = false;
+  }
+  S.draft.summary = summary;
+  S.step = 2; renderStep();
+  const ai = S.draft.aiTrades;
+  if (ai.length) {
+    $('wTradeHint').textContent = ai.length > 1
+      ? 'Plusieurs métiers peuvent convenir — confirmez :' : 'Confirmez le métier recommandé :';
+    renderTradeChips(ai.concat(S.trades.map(t=>t.id).filter(id=>!ai.includes(id))), ai[0]);
+  } else {
+    $('wTradeHint').textContent = 'Choisissez le métier :';
+    renderTradeChips(S.trades.map(t=>t.id), null);
+  }
 };
+
 function renderTradeChips(orderedIds, preselect){
   $('wTrades').innerHTML = orderedIds.map(id =>
     `<button type="button" class="chip ${id===preselect?'sel':''}" data-id="${id}">${TRADE_LABEL(id)}${id===preselect?' · recommandé':''}</button>`).join('');
@@ -388,7 +438,7 @@ $('wTrades').onclick = (e) => {
   $('wTradeNext').disabled = false;
 };
 $('wTradeNext').onclick = () => {
-  S.step = 2; renderStep();
+  S.step = 3; renderStep();
   $('wZones').innerHTML = S.zones.map(z=>`<button type="button" class="chip ${S.draft.zone===z.id?'sel':''}" data-id="${z.id}">${z.label}</button>`).join('');
   askGps();
 };
@@ -415,14 +465,14 @@ $('wLocNext').onclick = () => {
   const rep = $('wRepere').value.trim();
   if (rep.length < 5) return toast('Le point de repère aide l’artisan à vous trouver');
   S.draft.repere = rep;
-  S.step = 3; renderStep();
+  S.step = 4; renderStep();
 };
 
 /* ---- Étape 4 : urgence ---- */
 $('wUrgency').onclick = (e) => {
   const b = e.target.closest('.chip'); if (!b) return;
   S.draft.urgency = b.dataset.u;
-  S.step = 4; renderStep(); renderRecap();
+  S.step = 5; renderStep(); renderRecap();
 };
 
 /* ---- Étape 5 : récap + auth + paiement ---- */
@@ -497,7 +547,7 @@ async function bookAndPay(){
     // 2. Mission (forfait imposé par le trigger — patch 03)
     const { data: mission, error } = await sb.from('missions').insert({
       client_id: S.user.id, trade_id: d.trade, zone_id: d.zone,
-      repere: d.repere, description: d.description, photos: paths,
+      repere: d.repere, description: (d.summary || d.description), photos: paths,
       urgency: d.urgency === 'now',
       preferred_slot: URGENCY_LABEL[d.urgency],
       lat: d.lat, lng: d.lng,
@@ -711,10 +761,26 @@ async function renderClientActions(zone, m) {
       renderDetail(m);
     };
   }
-  else if (['assigned','en_route','arrived','in_progress'].includes(m.status)) {
-    zone.innerHTML = `<p class="sub">${{
+  else if (['assigned','en_route'].includes(m.status)) {
+    /* Code d'arrivée : le client le communique à l'artisan sur le pas de la porte */
+    let codeBox = '';
+    try {
+      const { data: ac } = await sb.from('mission_arrival_codes')
+        .select('code').eq('mission_id', m.id).maybeSingle();
+      if (ac?.code) codeBox = `
+        <div style="background:var(--ink);color:#fff;border-radius:var(--r);padding:14px 16px;margin-bottom:12px;text-align:center">
+          <div style="font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:#B9C0C9">Code d'arrivée</div>
+          <div style="font-family:'Syne';font-weight:800;font-size:2.2rem;letter-spacing:.18em;color:var(--accent)">${escapeHtml(ac.code)}</div>
+          <div class="sub" style="color:#B9C0C9">Donnez ce code à l'artisan à son arrivée — il prouve que c'est bien votre professionnel.</div>
+        </div>`;
+    } catch {}
+    zone.innerHTML = codeBox + `<p class="sub">${{
       assigned:'Votre artisan prépare son départ.',
       en_route:'Il est en route — le bouton 📞 permet de le joindre.',
+    }[m.status]}</p>`;
+  }
+  else if (['arrived','in_progress'].includes(m.status)) {
+    zone.innerHTML = `<p class="sub">${{
       arrived:'Il examine le problème et prépare son devis.',
       in_progress:`Travaux en cours — montant convenu : ${fcfa(m.final_amount_fcfa)}.`,
     }[m.status]}</p>`;

@@ -713,8 +713,22 @@ function renderActions(zone, m) {
     zone.querySelector('.btn').onclick = () => act('en_route');
   }
   else if (m.status === 'en_route') {
-    zone.innerHTML = `<div class="row"><button class="btn dark">📍 Je suis arrivé</button></div>`;
-    zone.querySelector('.btn').onclick = () => act('arrived');
+    /* Code d'arrivée (patch 07) : preuve de présence — demande-le au client */
+    zone.innerHTML = `
+      <label class="f">Code d'arrivée (4 chiffres, donné par le client)</label>
+      <input type="text" data-code inputmode="numeric" maxlength="4" placeholder="• • • •"
+             style="text-align:center; letter-spacing:.5em; font-size:1.4rem; font-weight:700">
+      <div class="row" style="margin-top:12px"><button class="btn dark" data-ok>📍 Valider mon arrivée</button></div>
+      <button class="btn ghost" data-skip style="width:100%; margin-top:8px; min-height:42px; font-size:.85rem">Le client ne peut pas donner le code</button>`;
+    zone.querySelector('[data-ok]').onclick = () => {
+      const c = zone.querySelector('[data-code]').value.replace(/\D/g,'');
+      if (c.length !== 4) return toast('Saisis les 4 chiffres affichés sur le téléphone du client');
+      act('arrived', { arrival_code: c });
+    };
+    zone.querySelector('[data-skip]').onclick = () => {
+      if (confirm('Valider sans code ? À n’utiliser que si le client ne peut pas te le donner — le cas est signalé à l’équipe.'))
+        act('arrived', { code_unavailable: true });
+    };
   }
   else if (m.status === 'arrived' || m.status === 'quote_pending') {
     const ranges = S.ranges.filter(r=>r.trade_id===m.trade_id);

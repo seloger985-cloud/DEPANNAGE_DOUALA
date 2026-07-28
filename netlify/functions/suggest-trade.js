@@ -14,6 +14,10 @@ exports.handler = async (event) => {
   const description = String(body.description || '').trim().slice(0, 500); // garde-fou coût
   if (description.length < 8) return json(400, { error: 'Description trop courte' });
 
+  const debug = event.queryStringParameters && event.queryStringParameters.debug === '1';
+  if (!process.env.ANTHROPIC_API_KEY)
+    return json(200, { reformulation: null, trades: [], error: debug ? 'ANTHROPIC_API_KEY absente' : undefined });
+
   const { data: trades } = await admin
     .from('trades').select('id, label_fr').eq('is_active', true);
   if (!trades?.length) return json(500, { error: 'Référentiel métiers indisponible' });
@@ -29,7 +33,7 @@ exports.handler = async (event) => {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5',
+        model: 'claude-haiku-4-5-20251001',  /* identifiant API complet — l'alias court peut ne pas résoudre */
         max_tokens: 300,
         system:
           `Tu aides une plateforme de dépannage à domicile à Douala (Cameroun). ` +
@@ -42,7 +46,7 @@ exports.handler = async (event) => {
         messages: [{ role: 'user', content: description }],
       }),
     });
-    if (!res.ok) throw new Error(`Anthropic ${res.status}`);
+    if (!res.ok) throw new Error(`Anthropic ${res.status} ${(await res.text()).slice(0,200)}`);
     const data = await res.json();
     const text = (data.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('');
     const clean = text.replace(/```json|```/g, '').trim();
@@ -60,6 +64,6 @@ exports.handler = async (event) => {
   } catch (e) {
     console.error('suggest-trade error', e.message);
     // Échec IA = jamais bloquant : le front bascule en choix manuel
-    return json(200, { reformulation: null, trades: [] });
+    return json(200, { reformulation: null, trades: [], error: debug ? e.message : undefined });
   }
 };
