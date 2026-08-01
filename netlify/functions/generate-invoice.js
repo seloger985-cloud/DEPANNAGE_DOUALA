@@ -8,11 +8,11 @@ const { admin, getUserFromRequest, json } = require('./_lib/supabase');
 
 // ⚠️ Placeholders à remplacer quand le nom/la structure juridique sont actés
 const BRAND = {
-  name: 'PLATEFORME DÉPANNAGE',        // ← nom du produit
-  legal: 'Raison sociale — Douala, Cameroun',
-  rccm: 'RCCM : —',
-  niu: 'NIU : —',
-  phone: 'WhatsApp : —',
+  name: 'EBOLO',                       // « le travail » en duala
+  legal: 'À COMPLÉTER SARL — Douala, Cameroun',   // ← raison sociale à la création
+  rccm: 'RCCM : —',                    // ← à renseigner après immatriculation
+  niu: 'NIU : —',                      // ← idem
+  phone: 'WhatsApp : —',               // ← numéro support
 };
 
 const fcfa = (n) => (n ?? 0).toLocaleString('fr-FR') + ' FCFA';
