@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0F0F0F">
-<title>Espace Artisan — Dépannage Douala</title>
+<title>Ebolo — Espace Artisan</title>
 <!-- TODO PWA : manifest.json + service worker. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
@@ -156,7 +156,7 @@
 <body>
 
 <header>
-  <div class="brand">Espace artisan<small>Dépannage Douala</small></div>
+  <div class="brand"><span style="color:var(--accent)">E</span>bolo<small>Espace artisan · Douala</small></div>
   <div class="dispo-mini" id="dispoMini" hidden><span class="led"></span><span class="txt"></span></div>
 </header>
 
@@ -164,7 +164,7 @@
   <!-- ========== LANDING RECRUTEMENT ========== -->
   <section class="screen on" id="scr-landing">
     <div class="hero">
-      <div class="logo">DEVIENS <em>PARTENAIRE</em></div>
+      <div class="logo">DEVIENS PARTENAIRE <em>E</em>BOLO</div>
       <p>Des clients près de chez toi. Déplacement toujours payé. Ton argent sous 48 h.</p>
       <button class="btn accent" id="btnJoin" style="width:100%">Devenir artisan partenaire</button>
       <button class="btn ghost" id="btnLogin" style="width:100%; margin-top:10px">J’ai déjà un compte</button>
@@ -334,7 +334,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 /* ================= ÉTAT ================= */
 const S = {
   user:null, profile:null, details:null, trades:[], zones:[], ranges:[],
-  dispatches:[], missions:[], timer:null, channel:null, step:0,
+  dispatches:[], missions:[], timer:null, refresh:null, channel:null, step:0,
   ob:{ trades:new Set(), zones:new Set(), level:null },
 };
 const $ = (id) => document.getElementById(id);
@@ -415,6 +415,7 @@ async function enterApp() {
   renderDashboard();
   subscribeRealtime();
   startCountdown();
+  startAutoRefresh();
   switchTab('dash');
 }
 
@@ -847,8 +848,9 @@ async function doAction(mission_id, action, extra = {}) {
   });
   const out = await res.json().catch(() => ({}));
   if (!res.ok) return toast(out.error || 'Action impossible');
-  await loadMissions();
-  if (action === 'done') { S.details.availability='available'; renderDispoUI('available'); renderDashboard(); }
+  await refreshAll();   /* une mission close libère aussi les propositions */
+  if (action === 'done') { S.details.availability='available'; renderDispoUI('available'); }
+  renderDashboard();
   const msg = { en_route:'Bonne route 🚗', arrived:'Arrivée enregistrée', propose_quote:'Devis envoyé au client',
     done:'Fin de travaux déclarée — le client confirme' }[action];
   if (msg) toast(msg);
@@ -893,6 +895,17 @@ async function loadProfileTab() {
       </div>`).join('') || '<p class="sub">Ton premier reversement apparaîtra ici.</p>'}`;
 }
 
+/* Filet de sécurité : le Realtime peut tomber (data intermittente).
+   Sans lui, l'artisan raterait une mission ou garderait un écran figé. */
+function refreshAll(){ loadDispatches(); loadMissions(); }
+function startAutoRefresh(){
+  clearInterval(S.refresh);
+  S.refresh = setInterval(() => { if (!document.hidden) refreshAll(); }, 20000);
+  /* Retour d'arrière-plan ou reconnexion : resynchronisation immédiate */
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshAll(); });
+  window.addEventListener('online', refreshAll);
+}
+
 /* ================= REALTIME ================= */
 function subscribeRealtime() {
   if (S.channel) sb.removeChannel(S.channel);
@@ -908,7 +921,7 @@ function subscribeRealtime() {
       })
     .on('postgres_changes',
       { event: 'UPDATE', schema: 'public', table: 'missions', filter: `assigned_artisan=eq.${S.user.id}` },
-      () => { loadMissions(); renderDashboard(); })
+      () => { refreshAll(); renderDashboard(); })
     .subscribe();
 }
 
@@ -937,8 +950,13 @@ function switchTab(tab) {
   document.querySelectorAll('nav.tabs button').forEach((b) =>
     b.classList.toggle('active', b.dataset.tab === tab));
   show('scr-' + tab);
+  /* Toujours relire la base : une mission peut avoir changé d'état
+     côté client (annulation, refus de devis, paiement) sans que le
+     Realtime soit arrivé — l'écran ne doit jamais montrer du périmé. */
   if (tab === 'profile') loadProfileTab();
-  if (tab === 'dash') renderDashboard();
+  if (tab === 'dash') { refreshAll(); renderDashboard(); }
+  if (tab === 'active') loadMissions();
+  if (tab === 'dispatch') loadDispatches();
 }
 $('tabs').addEventListener('click', (e) => {
   const b = e.target.closest('button'); if (b) switchTab(b.dataset.tab);
